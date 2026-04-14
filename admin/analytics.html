@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics — BigBlastToys Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<script src="admin.js"></script>
+<div class="admin-layout">
+  <div id="sidebar-mount"></div>
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Analytics</div>
+      <select id="range" onchange="loadAll()" style="background:var(--navy3);border:1px solid var(--border);color:#fff;border-radius:7px;padding:6px 12px;font-size:0.83rem;outline:none">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+    </div>
+    <div class="content">
+      <div class="stats-row mb-6">
+        <div class="stat-card"><div class="stat-label">Total Revenue</div><div class="stat-value" id="stat-rev">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-value" id="stat-orders">—</div></div>
+        <div class="stat-card"><div class="stat-label">Online Revenue</div><div class="stat-value" id="stat-online">—</div></div>
+        <div class="stat-card"><div class="stat-label">In-Store Revenue</div><div class="stat-value" id="stat-instore">—</div></div>
+      </div>
+      <div class="grid-2 mb-6">
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Revenue Over Time</div></div>
+          <div class="panel-body"><canvas id="revenue-chart" height="160"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Channel Breakdown</div></div>
+          <div class="panel-body" style="display:flex;align-items:center;justify-content:center"><canvas id="donut-chart" height="160" style="max-width:280px"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let revenueChart, donutChart;
+
+async function loadAll() {
+  const days = document.getElementById('range').value;
+  const data = await API.get(`/orders/analytics/summary?days=${days}`).catch(() => []);
+
+  const totalRev    = data.reduce((s, r) => s + parseFloat(r.revenue || 0), 0);
+  const totalOrders = data.reduce((s, r) => s + parseInt(r.order_count || 0), 0);
+  const onlineRev   = data.filter(r => r.channel === 'online').reduce((s, r) => s + parseFloat(r.revenue || 0), 0);
+  const instoreRev  = data.filter(r => r.channel === 'instore').reduce((s, r) => s + parseFloat(r.revenue || 0), 0);
+
+  document.getElementById('stat-rev').textContent    = fmt(totalRev);
+  document.getElementById('stat-orders').textContent = totalOrders;
+  document.getElementById('stat-online').textContent = fmt(onlineRev);
+  document.getElementById('stat-instore').textContent= fmt(instoreRev);
+
+  const dates  = [...new Set(data.map(r => r.date))].sort();
+  const labels = dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  const online  = dates.map(d => { const r = data.find(x => x.date === d && x.channel === 'online');  return r ? parseFloat(r.revenue) : 0; });
+  const instore = dates.map(d => { const r = data.find(x => x.date === d && x.channel === 'instore'); return r ? parseFloat(r.revenue) : 0; });
+
+  if (revenueChart) revenueChart.destroy();
+  revenueChart = new Chart(document.getElementById('revenue-chart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Online', data: online, borderColor: '#00aaff', backgroundColor: 'rgba(0,170,255,0.08)', tension: 0.4, fill: true, pointRadius: 3 },
+        { label: 'In-Store', data: instore, borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.08)', tension: 0.4, fill: true, pointRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: '#6b7a99', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#6b7a99', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#6b7a99', callback: v => '$' + v }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById('donut-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Online', 'In-Store'],
+      datasets: [{ data: [onlineRev, instoreRev], backgroundColor: ['rgba(0,170,255,0.8)', 'rgba(52,211,153,0.8)'], borderWidth: 0 }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: '#6b7a99', font: { size: 12 } } } }
+    }
+  });
+}
+
+(async () => { await initPage('Analytics'); loadAll(); })();
+</script>
+</body>
+</html>

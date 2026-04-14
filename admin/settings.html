@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — BigBlastToys Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<script src="admin.js"></script>
+<div class="admin-layout">
+  <div id="sidebar-mount"></div>
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Settings</div>
+    </div>
+    <div class="content">
+      <div class="panel" style="max-width:600px">
+        <div class="panel-header"><div class="panel-title">Store Settings</div></div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:16px">
+          <div class="form-group">
+            <label>Store Name</label>
+            <input type="text" id="s-name" placeholder="BigBlastToys TCG">
+          </div>
+          <div class="form-group">
+            <label>Contact Email</label>
+            <input type="email" id="s-email" placeholder="you@example.com">
+          </div>
+          <div class="form-group">
+            <label>Alert Email (low stock notifications)</label>
+            <input type="email" id="s-alert" placeholder="you@example.com">
+          </div>
+          <div class="form-group">
+            <label>Default Low Stock Threshold</label>
+            <input type="number" id="s-threshold" min="0" placeholder="3">
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+async function loadSettings() {
+  const s = await API.get('/settings').catch(() => ({}));
+  document.getElementById('s-name').value      = s.store_name || '';
+  document.getElementById('s-email').value     = s.contact_email || '';
+  document.getElementById('s-alert').value     = s.alert_email || '';
+  document.getElementById('s-threshold').value = s.low_stock_default || '3';
+}
+
+async function saveSettings() {
+  const body = {
+    store_name:       document.getElementById('s-name').value,
+    contact_email:    document.getElementById('s-email').value,
+    alert_email:      document.getElementById('s-alert').value,
+    low_stock_default:document.getElementById('s-threshold').value,
+  };
+  try { await API.put('/settings', body); showToast('Settings saved'); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+
+(async () => { await initPage('Settings'); loadSettings(); })();
+</script>
+</body>
+</html>

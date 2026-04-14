@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Graded Cards — BigBlastToys Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<script src="admin.js"></script>
+<div class="admin-layout">
+  <div id="sidebar-mount"></div>
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Graded Cards</div>
+      <button class="btn btn-primary" onclick="openModal()">+ Add Card</button>
+    </div>
+    <div class="content">
+      <div class="filters">
+        <select id="filter-status" onchange="loadGraded()">
+          <option value="">All Statuses</option>
+          <option value="sent">Sent</option>
+          <option value="received">Received</option>
+          <option value="listed">Listed</option>
+          <option value="sold">Sold</option>
+        </select>
+      </div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Card</th><th>Company</th><th>Sent</th><th>Expected Return</th><th>Grade</th><th>Raw Value</th><th>Graded Value</th><th>Status</th><th></th></tr></thead>
+            <tbody id="graded-table"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add to Grading Queue</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+      <div class="form-row">
+        <div class="form-group"><label>Card Name *</label><input type="text" id="f-name" placeholder="Charizard ex"></div>
+        <div class="form-group"><label>Set Name</label><input type="text" id="f-set" placeholder="Obsidian Flames"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Grading Company</label>
+          <select id="f-company"><option value="PSA">PSA</option><option value="BGS">BGS</option><option value="CGC">CGC</option></select>
+        </div>
+        <div class="form-group"><label>Status</label>
+          <select id="f-status"><option value="sent">Sent</option><option value="received">Received</option><option value="listed">Listed</option><option value="sold">Sold</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Sent Date</label><input type="date" id="f-sent"></div>
+        <div class="form-group"><label>Expected Return</label><input type="date" id="f-return"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Raw Value ($)</label><input type="number" id="f-raw" placeholder="0.00" step="0.01" min="0"></div>
+        <div class="form-group"><label>Grade Received</label><input type="text" id="f-grade" placeholder="10 / 9.5 / PSA 9"></div>
+      </div>
+      <div class="form-group"><label>Graded Value ($)</label><input type="number" id="f-graded" placeholder="0.00" step="0.01" min="0"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCard()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const statusBadge = s => ({
+  sent:     '<span class="badge badge-blue">Sent</span>',
+  received: '<span class="badge badge-purple">Received</span>',
+  listed:   '<span class="badge badge-ok">Listed</span>',
+  sold:     '<span class="badge badge-gray">Sold</span>',
+}[s] || s);
+
+async function loadGraded() {
+  const status = document.getElementById('filter-status').value;
+  const data = await API.get('/graded' + (status ? `?status=${status}` : '')).catch(() => []);
+  document.getElementById('graded-table').innerHTML = data.length ? data.map(c => `
+    <tr>
+      <td><div class="td-name">${c.name}</div><div class="td-sub">${c.set_name || ''}</div></td>
+      <td><span class="badge badge-blue">${c.grading_company || '—'}</span></td>
+      <td style="color:var(--muted)">${c.sent_date ? new Date(c.sent_date).toLocaleDateString() : '—'}</td>
+      <td style="color:var(--muted)">${c.expected_return ? new Date(c.expected_return).toLocaleDateString() : '—'}</td>
+      <td style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--blue)">${c.grade_received || '—'}</td>
+      <td>${c.raw_value ? fmt(c.raw_value) : '—'}</td>
+      <td>${c.graded_value ? fmt(c.graded_value) : '—'}</td>
+      <td>${statusBadge(c.status)}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="editCard(${JSON.stringify(c).replace(/"/g,'&quot;')})">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteCard('${c.id}','${c.name}')">Del</button>
+      </td>
+    </tr>`).join('') :
+    '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">No graded cards found</td></tr>';
+}
+
+function openModal(c = null) {
+  document.getElementById('edit-id').value     = c?.id || '';
+  document.getElementById('modal-title').textContent = c ? 'Edit Graded Card' : 'Add to Grading Queue';
+  document.getElementById('f-name').value      = c?.name || '';
+  document.getElementById('f-set').value       = c?.set_name || '';
+  document.getElementById('f-company').value   = c?.grading_company || 'PSA';
+  document.getElementById('f-status').value    = c?.status || 'sent';
+  document.getElementById('f-sent').value      = c?.sent_date?.slice(0,10) || '';
+  document.getElementById('f-return').value    = c?.expected_return?.slice(0,10) || '';
+  document.getElementById('f-raw').value       = c?.raw_value || '';
+  document.getElementById('f-grade').value     = c?.grade_received || '';
+  document.getElementById('f-graded').value    = c?.graded_value || '';
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+function editCard(c) { openModal(c); }
+
+async function saveCard() {
+  const id = document.getElementById('edit-id').value;
+  const body = {
+    name: document.getElementById('f-name').value,
+    set_name: document.getElementById('f-set').value,
+    grading_company: document.getElementById('f-company').value,
+    status: document.getElementById('f-status').value,
+    sent_date: document.getElementById('f-sent').value || null,
+    expected_return: document.getElementById('f-return').value || null,
+    raw_value: parseFloat(document.getElementById('f-raw').value) || null,
+    grade_received: document.getElementById('f-grade').value || null,
+    graded_value: parseFloat(document.getElementById('f-graded').value) || null,
+  };
+  try {
+    if (id) { await API.put(`/graded/${id}`, body); showToast('Card updated'); }
+    else { await API.post('/graded', body); showToast('Card added to queue'); }
+    closeModal(); loadGraded();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function deleteCard(id, name) {
+  if (!confirm(`Delete "${name}"?`)) return;
+  try { await API.delete(`/graded/${id}`); showToast(`${name} deleted`); loadGraded(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+
+(async () => { await initPage('Graded Cards'); loadGraded(); })();
+</script>
+</body>
+</html>

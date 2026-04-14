@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory — BigBlastToys Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<script src="admin.js"></script>
+<div class="admin-layout">
+  <div id="sidebar-mount"></div>
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Inventory</div>
+      <button class="btn btn-primary" onclick="openModal()">+ Add Item</button>
+    </div>
+    <div class="content">
+      <div class="filters">
+        <input type="text" id="search" placeholder="Search cards or sets..." oninput="loadInventory()" style="flex:1;min-width:200px">
+        <select id="filter-category" onchange="loadInventory()">
+          <option value="">All Categories</option>
+          <option value="singles">Singles</option>
+          <option value="sealed">Sealed</option>
+          <option value="graded">Graded</option>
+        </select>
+        <select id="filter-condition" onchange="loadInventory()">
+          <option value="">All Conditions</option>
+          <option value="NM">NM</option>
+          <option value="LP">LP</option>
+          <option value="MP">MP</option>
+          <option value="HP">HP</option>
+          <option value="DMG">DMG</option>
+        </select>
+        <select id="filter-stock" onchange="loadInventory()">
+          <option value="">All Stock</option>
+          <option value="low">Low Stock</option>
+          <option value="out">Out Online</option>
+        </select>
+      </div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Card / Product</th><th>Category</th><th>Condition</th><th>Price</th><th>Online Stock</th><th>In-Store Stock</th><th>Status</th><th></th></tr></thead>
+            <tbody id="inv-table"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add Item</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+      <div class="form-row">
+        <div class="form-group"><label>Name *</label><input type="text" id="f-name" placeholder="Charizard ex"></div>
+        <div class="form-group"><label>Set Name</label><input type="text" id="f-set" placeholder="Obsidian Flames"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Category *</label>
+          <select id="f-category"><option value="singles">Singles</option><option value="sealed">Sealed</option><option value="graded">Graded</option></select>
+        </div>
+        <div class="form-group"><label>Condition</label>
+          <select id="f-condition"><option value="NM">NM</option><option value="LP">LP</option><option value="MP">MP</option><option value="HP">HP</option><option value="DMG">DMG</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Variant</label><input type="text" id="f-variant" placeholder="Special Illustration Rare"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Price ($)</label><input type="number" id="f-price" placeholder="0.00" step="0.01" min="0"></div>
+        <div class="form-group"><label>Low Stock Threshold</label><input type="number" id="f-threshold" value="3" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Online Stock</label><input type="number" id="f-online" value="0" min="0"></div>
+        <div class="form-group"><label>In-Store Stock</label><input type="number" id="f-instore" value="0" min="0"></div>
+      </div>
+      <div class="form-group"><label>Image URL</label><input type="url" id="f-img" placeholder="https://..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+let currentUser;
+
+async function loadInventory() {
+  const search   = document.getElementById('search').value;
+  const category = document.getElementById('filter-category').value;
+  const condition= document.getElementById('filter-condition').value;
+  const stock    = document.getElementById('filter-stock').value;
+  const params   = new URLSearchParams({ search, category, condition, stock });
+  const inv = await API.get('/inventory?' + params).catch(() => []);
+  const isAdmin = currentUser?.role === 'admin';
+
+  document.getElementById('inv-table').innerHTML = inv.length ? inv.map(i => `
+    <tr>
+      <td><div class="td-name">${i.name}</div><div class="td-sub">${i.set_name || ''} ${i.variant ? '· ' + i.variant : ''}</div></td>
+      <td><span class="badge badge-blue">${i.category}</span></td>
+      <td><span class="badge badge-gray">${i.condition}</span></td>
+      <td>${fmt(i.price)}</td>
+      <td><input class="stock-input" type="number" value="${i.online_stock}" min="0" onchange="updateStock('${i.id}', this, 'online')" title="Online stock"></td>
+      <td><input class="stock-input" type="number" value="${i.instore_stock}" min="0" onchange="updateStock('${i.id}', this, 'instore')" title="In-store stock"></td>
+      <td>${stockBadge(i.online_stock, i.instore_stock, i.low_stock_threshold)}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="editItem(${JSON.stringify(i).replace(/"/g, '&quot;')})">Edit</button>
+        ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}','${i.name}')">Del</button>` : ''}
+      </td>
+    </tr>`).join('') :
+    '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px">No items found</td></tr>';
+}
+
+async function updateStock(id, input, field) {
+  const item = await API.get(`/inventory/${id}`).catch(() => null);
+  if (!item) return;
+  const online  = field === 'online'  ? parseInt(input.value) : item.online_stock;
+  const instore = field === 'instore' ? parseInt(input.value) : item.instore_stock;
+  try {
+    await API.patch(`/inventory/${id}/stock`, { online_stock: online, instore_stock: instore });
+    showToast('Stock updated');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+function openModal(item = null) {
+  document.getElementById('edit-id').value = item?.id || '';
+  document.getElementById('modal-title').textContent = item ? 'Edit Item' : 'Add Item';
+  document.getElementById('f-name').value      = item?.name || '';
+  document.getElementById('f-set').value       = item?.set_name || '';
+  document.getElementById('f-variant').value   = item?.variant || '';
+  document.getElementById('f-category').value  = item?.category || 'singles';
+  document.getElementById('f-condition').value = item?.condition || 'NM';
+  document.getElementById('f-price').value     = item?.price || '';
+  document.getElementById('f-online').value    = item?.online_stock ?? 0;
+  document.getElementById('f-instore').value   = item?.instore_stock ?? 0;
+  document.getElementById('f-threshold').value = item?.low_stock_threshold ?? 3;
+  document.getElementById('f-img').value       = item?.img_url || '';
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+function editItem(item) { openModal(item); }
+
+async function saveItem() {
+  const id = document.getElementById('edit-id').value;
+  const body = {
+    name: document.getElementById('f-name').value,
+    set_name: document.getElementById('f-set').value,
+    variant: document.getElementById('f-variant').value,
+    category: document.getElementById('f-category').value,
+    condition: document.getElementById('f-condition').value,
+    price: parseFloat(document.getElementById('f-price').value) || 0,
+    online_stock: parseInt(document.getElementById('f-online').value) || 0,
+    instore_stock: parseInt(document.getElementById('f-instore').value) || 0,
+    low_stock_threshold: parseInt(document.getElementById('f-threshold').value) || 3,
+    img_url: document.getElementById('f-img').value,
+  };
+  try {
+    if (id) { await API.put(`/inventory/${id}`, body); showToast('Item updated'); }
+    else { await API.post('/inventory', body); showToast('Item added'); }
+    closeModal();
+    loadInventory();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function deleteItem(id, name) {
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try {
+    await API.delete(`/inventory/${id}`);
+    showToast(`${name} deleted`);
+    loadInventory();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+(async () => {
+  currentUser = await initPage('Inventory');
+  loadInventory();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Staff — BigBlastToys Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<script src="admin.js"></script>
+<div class="admin-layout">
+  <div id="sidebar-mount"></div>
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Staff Access</div>
+      <button class="btn btn-primary" onclick="openModal()">+ Add Staff</button>
+    </div>
+    <div class="content">
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th></th></tr></thead>
+            <tbody id="staff-table"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add Staff Member</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id">
+      <div class="form-row">
+        <div class="form-group"><label>Name *</label><input type="text" id="f-name" placeholder="Jane Smith"></div>
+        <div class="form-group"><label>Role</label>
+          <select id="f-role"><option value="staff">Staff</option><option value="admin">Admin</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Email *</label><input type="email" id="f-email" placeholder="jane@example.com"></div>
+      <div class="form-group"><label id="password-label">Password *</label><input type="password" id="f-password" placeholder="••••••••"></div>
+      <div style="font-size:0.75rem;color:var(--muted)" id="password-hint"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStaff()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+let currentUserId;
+
+async function loadStaff() {
+  const data = await API.get('/staff').catch(() => []);
+  document.getElementById('staff-table').innerHTML = data.length ? data.map(s => `
+    <tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;background:linear-gradient(135deg,var(--blue),#0066cc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">
+            ${s.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+          </div>
+          <div class="td-name">${s.name}</div>
+        </div>
+      </td>
+      <td style="color:var(--muted)">${s.email}</td>
+      <td>${s.role === 'admin' ? '<span class="badge badge-blue">Admin</span>' : '<span class="badge badge-gray">Staff</span>'}</td>
+      <td style="color:var(--muted)">${new Date(s.created_at).toLocaleDateString()}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="editStaff(${JSON.stringify(s).replace(/"/g,'&quot;')})">Edit</button>
+        ${s.id !== currentUserId ? `<button class="btn btn-danger btn-sm" onclick="deleteStaff('${s.id}','${s.name}')">Remove</button>` : '<span style="font-size:0.75rem;color:var(--muted);padding:4px 8px">You</span>'}
+      </td>
+    </tr>`).join('') :
+    '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">No staff members</td></tr>';
+}
+
+function openModal(s = null) {
+  document.getElementById('edit-id').value    = s?.id || '';
+  document.getElementById('modal-title').textContent = s ? 'Edit Staff Member' : 'Add Staff Member';
+  document.getElementById('f-name').value     = s?.name || '';
+  document.getElementById('f-email').value    = s?.email || '';
+  document.getElementById('f-role').value     = s?.role || 'staff';
+  document.getElementById('f-password').value = '';
+  document.getElementById('f-email').disabled = !!s;
+  document.getElementById('password-label').textContent = s ? 'New Password (leave blank to keep)' : 'Password *';
+  document.getElementById('password-hint').textContent  = s ? 'Leave blank to keep existing password.' : '';
+  document.getElementById('modal').classList.remove('hidden');
+}
+
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+function editStaff(s) { openModal(s); }
+
+async function saveStaff() {
+  const id = document.getElementById('edit-id').value;
+  const body = {
+    name: document.getElementById('f-name').value,
+    email: document.getElementById('f-email').value,
+    role: document.getElementById('f-role').value,
+    password: document.getElementById('f-password').value || undefined,
+  };
+  try {
+    if (id) { await API.put(`/staff/${id}`, body); showToast('Staff updated'); }
+    else { await API.post('/staff', body); showToast('Staff member added'); }
+    closeModal(); loadStaff();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function deleteStaff(id, name) {
+  if (!confirm(`Remove "${name}" from staff?`)) return;
+  try { await API.delete(`/staff/${id}`); showToast(`${name} removed`); loadStaff(); }
+  catch (e) { showToast(e.message, 'error'); }
+}
+
+(async () => {
+  const user = await initPage('Staff Access');
+  currentUserId = user?.id;
+  loadStaff();
+})();
+</script>
+</body>
+</html>

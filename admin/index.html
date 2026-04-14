@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BigBlastToys Admin — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+<style>
+  body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: radial-gradient(ellipse at 50% 0%, rgba(0,170,255,0.08) 0%, var(--navy) 60%); }
+  .login-card { background: var(--navy2); border: 1px solid var(--border); border-radius: 16px; padding: 40px; width: 100%; max-width: 380px; }
+  .login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
+  .login-logo .logo-mark { width: 40px; height: 40px; font-size: 1.1rem; }
+  .login-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 0.05em; }
+  .login-title span { color: var(--blue); }
+  h2 { font-size: 1.5rem; margin-bottom: 6px; font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.05em; }
+  .login-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 28px; }
+  .error-msg { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); border-radius: 7px; padding: 10px 12px; color: var(--red); font-size: 0.83rem; margin-bottom: 14px; display: none; }
+  .btn-login { width: 100%; margin-top: 6px; padding: 11px; font-size: 0.92rem; justify-content: center; }
+  .mb-4 { margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<script src="admin.js"></script>
+<div class="login-card">
+  <div class="login-logo">
+    <div class="logo-mark">BB</div>
+    <div>
+      <div class="login-title">BigBlast<span>Toys</span></div>
+    </div>
+  </div>
+  <h2>Admin Login</h2>
+  <p class="login-sub">Sign in to manage your store</p>
+  <div class="error-msg" id="error-msg"></div>
+  <div class="form-group mb-4">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+  </div>
+  <div class="form-group mb-4">
+    <label>Password</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+  </div>
+  <button class="btn btn-primary btn-login" id="login-btn" onclick="doLogin()">Sign In</button>
+</div>
+<script>
+  // If already logged in redirect to dashboard
+  const token = localStorage.getItem('admin_token');
+  if (token) {
+    API.get('/auth/me').then(() => { window.location.href = 'dashboard.html'; }).catch(() => {
+      localStorage.removeItem('admin_token');
+      localStorage.removeItem('admin_user');
+    });
+  }
+
+  async function doLogin() {
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('login-btn');
+    const err = document.getElementById('error-msg');
+    err.style.display = 'none';
+    btn.textContent = 'Signing in...';
+    btn.disabled = true;
+    try {
+      const { token, user } = await API.post('/auth/login', { email, password });
+      localStorage.setItem('admin_token', token);
+      localStorage.setItem('admin_user', JSON.stringify(user));
+      window.location.href = 'dashboard.html';
+    } catch (e) {
+      err.textContent = e.message;
+      err.style.display = 'block';
+      btn.textContent = 'Sign In';
+      btn.disabled = false;
+    }
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+</script>
+</body>
+</html>

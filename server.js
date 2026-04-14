@@ -5,16 +5,28 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Database connection
+// Database connection pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false }
 });
 
+// Attach db pool to every request
+app.use((req, res, next) => { req.db = pool; next(); });
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Health check — tests DB connection
+// API routes
+const { router: authRouter } = require('./api/auth');
+app.use('/api/auth',      authRouter);
+app.use('/api/inventory', require('./api/inventory'));
+app.use('/api/orders',    require('./api/orders'));
+app.use('/api/graded',    require('./api/graded'));
+app.use('/api/staff',     require('./api/staff'));
+app.use('/api/settings',  require('./api/settings'));
+
+// Health check
 app.get('/api/health', async (req, res) => {
   try {
     await pool.query('SELECT 1');
@@ -24,6 +36,10 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Serve admin pages
+app.use('/admin', express.static(path.join(__dirname, 'admin')));
+
+// Fallback to public site
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });

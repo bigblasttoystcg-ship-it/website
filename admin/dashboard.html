@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — BigBlastToys Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<script src="admin.js"></script>
+<div class="admin-layout">
+  <div id="sidebar-mount"></div>
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Dashboard</div>
+    </div>
+    <div class="content">
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-label">Inventory Value</div><div class="stat-value" id="stat-value">—</div></div>
+        <div class="stat-card"><div class="stat-label">Cards In Stock</div><div class="stat-value" id="stat-count">—</div></div>
+        <div class="stat-card"><div class="stat-label">Low Stock Alerts</div><div class="stat-value" id="stat-alerts" style="color:var(--yellow)">—</div><div class="stat-delta warn" id="stat-alerts-sub"></div></div>
+        <div class="stat-card"><div class="stat-label">Revenue This Month</div><div class="stat-value" id="stat-revenue">—</div></div>
+      </div>
+
+      <!-- Chart + Alerts -->
+      <div class="grid-3-1 mb-6">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Sales — Online vs In-Store</div>
+            <select id="chart-range" onchange="loadChart()" style="background:var(--navy3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 8px;font-size:0.76rem;outline:none">
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+          </div>
+          <div class="panel-body"><canvas id="sales-chart" height="140"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Low Stock Alerts</div></div>
+          <div class="panel-body"><div class="alert-list" id="alert-list"><div class="empty-state"><p>Loading...</p></div></div></div>
+        </div>
+      </div>
+
+      <!-- Recent Inventory -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Recent Inventory</div>
+          <a href="inventory.html" class="btn btn-ghost btn-sm">View All</a>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Card / Product</th><th>Category</th><th>Online</th><th>In-Store</th><th>Price</th><th>Status</th></tr></thead>
+            <tbody id="recent-table"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let salesChart;
+
+async function loadStats() {
+  const inv = await API.get('/inventory').catch(() => []);
+  const totalValue = inv.reduce((s, i) => s + (i.price * (i.online_stock + i.instore_stock)), 0);
+  const totalCount = inv.reduce((s, i) => s + i.online_stock + i.instore_stock, 0);
+  const lowItems = inv.filter(i => (i.online_stock + i.instore_stock) <= i.low_stock_threshold);
+  document.getElementById('stat-value').textContent = fmt(totalValue);
+  document.getElementById('stat-count').textContent = totalCount.toLocaleString();
+  document.getElementById('stat-alerts').textContent = lowItems.length;
+  document.getElementById('stat-alerts-sub').textContent = lowItems.length > 0 ? 'Needs attention' : 'All good';
+
+  // Alerts panel
+  const list = document.getElementById('alert-list');
+  if (!lowItems.length) {
+    list.innerHTML = '<div class="empty-state"><p>All items well stocked</p></div>';
+  } else {
+    list.innerHTML = lowItems.slice(0,6).map(i => `
+      <div class="alert-item ${i.online_stock === 0 ? 'critical' : ''}">
+        <span>${i.online_stock === 0 ? '🔴' : '🟡'}</span>
+        <div>
+          <div class="alert-text">${i.name}</div>
+          <div class="alert-sub">Online: ${i.online_stock} · In-Store: ${i.instore_stock}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Recent table
+  const recent = [...inv].slice(0, 10);
+  document.getElementById('recent-table').innerHTML = recent.length ? recent.map(i => `
+    <tr onclick="location.href='inventory.html'">
+      <td><div class="td-name">${i.name}</div><div class="td-sub">${i.set_name || ''}</div></td>
+      <td><span class="badge badge-blue">${i.category}</span></td>
+      <td>${i.online_stock}</td>
+      <td>${i.instore_stock}</td>
+      <td>${fmt(i.price)}</td>
+      <td>${stockBadge(i.online_stock, i.instore_stock, i.low_stock_threshold)}</td>
+    </tr>`).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">No inventory yet</td></tr>';
+}
+
+async function loadRevenue() {
+  try {
+    const data = await API.get('/orders/analytics/summary?days=30');
+    const thisMonth = data.filter(r => {
+      const d = new Date(r.date);
+      const now = new Date();
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const rev = thisMonth.reduce((s, r) => s + parseFloat(r.revenue || 0), 0);
+    document.getElementById('stat-revenue').textContent = fmt(rev);
+  } catch { document.getElementById('stat-revenue').textContent = '$0.00'; }
+}
+
+async function loadChart() {
+  const days = document.getElementById('chart-range').value;
+  try {
+    const data = await API.get(`/orders/analytics/summary?days=${days}`);
+    const dates = [...new Set(data.map(r => r.date))].sort();
+    const online   = dates.map(d => { const r = data.find(x => x.date === d && x.channel === 'online');   return r ? parseFloat(r.revenue) : 0; });
+    const instore  = dates.map(d => { const r = data.find(x => x.date === d && x.channel === 'instore');  return r ? parseFloat(r.revenue) : 0; });
+    const labels   = dates.map(d => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+
+    if (salesChart) salesChart.destroy();
+    salesChart = new Chart(document.getElementById('sales-chart'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Online', data: online, backgroundColor: 'rgba(0,170,255,0.7)', borderRadius: 4 },
+          { label: 'In-Store', data: instore, backgroundColor: 'rgba(52,211,153,0.7)', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: { legend: { labels: { color: '#6b7a99', font: { size: 11 } } } },
+        scales: {
+          x: { ticks: { color: '#6b7a99', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+          y: { ticks: { color: '#6b7a99', font: { size: 10 }, callback: v => '$' + v }, grid: { color: 'rgba(255,255,255,0.04)' } }
+        }
+      }
+    });
+  } catch { /* no orders yet */ }
+}
+
+(async () => {
+  await initPage('Dashboard');
+  loadStats();
+  loadRevenue();
+  loadChart();
+})();
+</script>
+</body>
+</html>

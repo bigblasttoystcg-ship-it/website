@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orders — BigBlastToys Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<script src="admin.js"></script>
+<div class="admin-layout">
+  <div id="sidebar-mount"></div>
+  <div class="main">
+    <div class="topbar">
+      <div class="page-title" id="page-title">Orders</div>
+    </div>
+    <div class="content">
+      <div class="filters">
+        <select id="filter-channel" onchange="loadOrders()">
+          <option value="">All Channels</option>
+          <option value="online">Online</option>
+          <option value="instore">In-Store</option>
+        </select>
+        <select id="filter-status" onchange="loadOrders()">
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="fulfilled">Fulfilled</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Customer</th><th>Channel</th><th>Total</th><th>Status</th><th>Date</th><th></th></tr></thead>
+            <tbody id="orders-table"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Order detail modal -->
+<div class="modal-overlay hidden" id="order-modal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <div class="modal-title" id="order-modal-title">Order Details</div>
+      <button class="modal-close" onclick="closeOrderModal()">✕</button>
+    </div>
+    <div class="modal-body" id="order-modal-body"></div>
+    <div class="modal-footer" id="order-modal-footer"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const statusBadge = s => ({
+  pending:   '<span class="badge badge-low">Pending</span>',
+  fulfilled: '<span class="badge badge-ok">Fulfilled</span>',
+  cancelled: '<span class="badge badge-out">Cancelled</span>',
+}[s] || s);
+
+const channelBadge = c => c === 'online'
+  ? '<span class="badge badge-blue">Online</span>'
+  : '<span class="badge badge-gray">In-Store</span>';
+
+async function loadOrders() {
+  const channel = document.getElementById('filter-channel').value;
+  const status  = document.getElementById('filter-status').value;
+  const params  = new URLSearchParams({ channel, status });
+  const orders  = await API.get('/orders?' + params).catch(() => []);
+
+  document.getElementById('orders-table').innerHTML = orders.length ? orders.map(o => `
+    <tr onclick="viewOrder('${o.id}')">
+      <td><div class="td-name">${o.customer_name || 'Walk-in'}</div></td>
+      <td>${channelBadge(o.channel)}</td>
+      <td>${fmt(o.total)}</td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="color:var(--muted)">${new Date(o.created_at).toLocaleDateString()}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="viewOrder('${o.id}');event.stopPropagation()">View</button></td>
+    </tr>`).join('') :
+    '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">No orders found</td></tr>';
+}
+
+async function viewOrder(id) {
+  const order = await API.get(`/orders/${id}`).catch(() => null);
+  if (!order) return;
+  document.getElementById('order-modal-title').textContent = `Order — ${order.customer_name || 'Walk-in'}`;
+  document.getElementById('order-modal-body').innerHTML = `
+    <div style="display:flex;gap:16px;margin-bottom:4px">
+      <div><div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Channel</div><div style="margin-top:4px">${channelBadge(order.channel)}</div></div>
+      <div><div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Status</div><div style="margin-top:4px">${statusBadge(order.status)}</div></div>
+      <div><div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em">Date</div><div style="margin-top:4px;font-size:0.83rem">${new Date(order.created_at).toLocaleString()}</div></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:8px">
+      <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Items</div>
+      ${(order.items || []).map(i => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04)">
+          <div><div style="font-weight:600">${i.name}</div><div style="font-size:0.75rem;color:var(--muted)">${i.set_name || ''} × ${i.quantity}</div></div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--blue)">${fmt(i.price_at_sale * i.quantity)}</div>
+        </div>`).join('') || '<div style="color:var(--muted);font-size:0.83rem">No items</div>'}
+      <div style="display:flex;justify-content:space-between;margin-top:12px;font-weight:700">
+        <span>Total</span><span style="font-family:\'Bebas Neue\',sans-serif;font-size:1.3rem;color:var(--blue)">${fmt(order.total)}</span>
+      </div>
+    </div>`;
+
+  const footer = document.getElementById('order-modal-footer');
+  footer.innerHTML = `<button class="btn btn-ghost" onclick="closeOrderModal()">Close</button>`;
+  if (order.status === 'pending') {
+    footer.innerHTML += `
+      <button class="btn btn-danger btn-sm" onclick="setStatus('${order.id}','cancelled')">Cancel</button>
+      <button class="btn btn-primary" onclick="setStatus('${order.id}','fulfilled')">Mark Fulfilled</button>`;
+  }
+  document.getElementById('order-modal').classList.remove('hidden');
+}
+
+async function setStatus(id, status) {
+  try {
+    await API.patch(`/orders/${id}/status`, { status });
+    showToast(`Order marked as ${status}`);
+    closeOrderModal();
+    loadOrders();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+function closeOrderModal() { document.getElementById('order-modal').classList.add('hidden'); }
+
+(async () => {
+  await initPage('Orders');
+  loadOrders();
+})();
+</script>
+</body>
+</html>
