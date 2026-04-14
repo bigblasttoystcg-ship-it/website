@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BigBlastToys TCG — Collect. Battle. Win.</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- NAV -->
+  <header class="nav">
+    <div class="nav-inner">
+
+      <!-- Left: Logo + Menu toggle -->
+      <div class="nav-left">
+        <a class="logo" href="#">
+          <img src="logo.png" alt="BigBlastToys TCG" class="nav-logo-img" />
+        </a>
+        <button class="menu-toggle" id="menuToggle" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <!-- Dropdown -->
+        <div class="nav-dropdown" id="navDropdown">
+          <div class="dropdown-section">
+            <div class="dropdown-heading">Singles</div>
+            <a href="#featured" class="dropdown-item">
+              <img class="di-icon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png" alt="Charizard" />
+              <div><strong>Featured Cards</strong><br/><small>Hand-picked hits</small></div>
+            </a>
+            <a href="#featured" class="dropdown-item">
+              <img class="di-icon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png" alt="Mewtwo" />
+              <div><strong>Holo &amp; Secret Rares</strong><br/><small>Ultra &amp; rainbow rares</small></div>
+            </a>
+          </div>
+          <div class="dropdown-section">
+            <div class="dropdown-heading">Sealed Product</div>
+            <a href="#shop" class="dropdown-item">
+              <img class="di-icon" src="https://images.pokemontcg.io/sv3/logo.png" alt="Obsidian Flames" />
+              <div><strong>Booster Boxes</strong><br/><small>36 packs per box</small></div>
+            </a>
+            <a href="#shop" class="dropdown-item">
+              <img class="di-icon" src="https://images.pokemontcg.io/sv1/logo.png" alt="SV Base" />
+              <div><strong>Elite Trainer Boxes</strong><br/><small>Most popular</small></div>
+            </a>
+            <a href="#shop" class="dropdown-item">
+              <img class="di-icon" src="https://images.pokemontcg.io/sv3pt5/logo.png" alt="151" />
+              <div><strong>Booster Packs</strong><br/><small>Individual packs</small></div>
+            </a>
+          </div>
+          <div class="dropdown-section">
+            <div class="dropdown-heading">Graded Cards</div>
+            <a href="#graded" class="dropdown-item">
+              <img class="di-icon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu" />
+              <div><strong>PSA Graded</strong><br/><small>9s &amp; 10s in stock</small></div>
+            </a>
+            <a href="#graded" class="dropdown-item">
+              <img class="di-icon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/282.png" alt="Gardevoir" />
+              <div><strong>BGS &amp; CGC</strong><br/><small>Gem mint slabs</small></div>
+            </a>
+          </div>
+          <div class="dropdown-section dropdown-contact">
+            <div class="dropdown-heading">Contact Us</div>
+            <a href="#contact" class="dropdown-item">
+              <img class="di-icon" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="Eevee" />
+              <div><strong>Send a Message</strong><br/><small>Orders, bulk, questions</small></div>
+            </a>
+            <a href="#about" class="dropdown-item">
+              <img class="di-icon" src="logo.png" alt="BigBlastToys" />
+              <div><strong>About BigBlastToys</strong><br/><small>Our story</small></div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center: Big search bar -->
+      <div class="nav-search">
+        <svg class="search-icon-left" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Search cards, sets, Pokémon..." autocomplete="off" />
+        <div class="search-results" id="searchResults"></div>
+      </div>
+
+      <!-- Right: Cart -->
+      <button class="cart-btn" id="cartBtn" aria-label="Cart">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+
+    </div>
+
+    <!-- Cart drawer -->
+    <div class="cart-overlay" id="cartOverlay"></div>
+    <div class="cart-drawer" id="cartDrawer">
+      <div class="cart-header">
+        <h3>Your Cart</h3>
+        <button class="cart-close" id="cartClose">&times;</button>
+      </div>
+      <div class="cart-items" id="cartItems">
+        <div class="cart-empty">
+          <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <p>Your cart is empty</p>
+          <small>Add some cards to get started</small>
+        </div>
+      </div>
+      <div class="cart-footer" id="cartFooter" style="display:none">
+        <div class="cart-total">
+          <span>Total</span>
+          <span class="cart-total-price" id="cartTotal">$0.00</span>
+        </div>
+        <a href="#contact" class="btn btn-primary" style="width:100%;text-align:center" onclick="closeCart()">Checkout via Contact</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-header">
+      <p class="hero-tag">New Sets Now In Stock</p>
+      <h1>The Hottest Cards<br/>in the Game</h1>
+      <p class="hero-sub">Premium Pokemon TCG singles, sealed product &amp; graded slabs — shipped fast.</p>
+      <div class="hero-btns">
+        <a href="#featured" class="btn btn-primary">Shop Singles</a>
+        <a href="#graded" class="btn btn-outline">Graded Cards</a>
+      </div>
+    </div>
+
+    <div class="hero-marquee-wrap">
+      <div class="marquee-fade-left"></div>
+      <div class="marquee-fade-right"></div>
+
+      <div class="marquee-row">
+        <div class="marquee-track" id="marqueeTrack1">
+          <div class="marquee-skeleton"></div>
+          <div class="marquee-skeleton"></div>
+          <div class="marquee-skeleton"></div>
+          <div class="marquee-skeleton"></div>
+          <div class="marquee-skeleton"></div>
+        </div>
+      </div>
+
+      <div class="marquee-row marquee-reverse">
+        <div class="marquee-track" id="marqueeTrack2">
+          <div class="marquee-skeleton"></div>
+          <div class="marquee-skeleton"></div>
+          <div class="marquee-skeleton"></div>
+          <div class="marquee-skeleton"></div>
+          <div class="marquee-skeleton"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <section class="stats-bar">
+    <div class="stat">
+      <span class="stat-num">10,000+</span>
+      <span class="stat-label">Cards in Stock</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">50+</span>
+      <span class="stat-label">Sets Available</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">5,000+</span>
+      <span class="stat-label">Happy Collectors</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">Fast</span>
+      <span class="stat-label">Tracked Shipping</span>
+    </div>
+  </section>
+
+  <!-- FEATURED CARDS -->
+  <section class="featured" id="featured">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2>Featured Cards</h2>
+        <p>Hand-picked hits from our current inventory</p>
+      </div>
+      <div class="products-grid">
+
+        <div class="product-card holo">
+          <div class="product-badge">Holo Rare</div>
+          <div class="product-art">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu" />
+          </div>
+          <div class="product-info">
+            <h3>Pikachu ex</h3>
+            <p>Scarlet &amp; Violet Base Set</p>
+            <div class="product-footer">
+              <span class="price">$24.99</span>
+              <button class="btn btn-sm">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card secret">
+          <div class="product-badge">Secret Rare</div>
+          <div class="product-art">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png" alt="Mewtwo" />
+          </div>
+          <div class="product-info">
+            <h3>Mewtwo ex</h3>
+            <p>151 — Full Art</p>
+            <div class="product-footer">
+              <span class="price">$79.99</span>
+              <button class="btn btn-sm">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card ultra">
+          <div class="product-badge">Ultra Rare</div>
+          <div class="product-art">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png" alt="Charizard" />
+          </div>
+          <div class="product-info">
+            <h3>Charizard ex</h3>
+            <p>Obsidian Flames</p>
+            <div class="product-footer">
+              <span class="price">$54.99</span>
+              <button class="btn btn-sm">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card holo">
+          <div class="product-badge">Illustration Rare</div>
+          <div class="product-art">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png" alt="Bulbasaur" />
+          </div>
+          <div class="product-info">
+            <h3>Bulbasaur</h3>
+            <p>151 — ILL Rare</p>
+            <div class="product-footer">
+              <span class="price">$12.99</span>
+              <button class="btn btn-sm">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card secret">
+          <div class="product-badge">Rainbow Rare</div>
+          <div class="product-art">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/282.png" alt="Gardevoir" />
+          </div>
+          <div class="product-info">
+            <h3>Gardevoir ex</h3>
+            <p>Scarlet &amp; Violet</p>
+            <div class="product-footer">
+              <span class="price">$44.99</span>
+              <button class="btn btn-sm">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="product-card ultra">
+          <div class="product-badge">Gold Rare</div>
+          <div class="product-art">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png" alt="Eevee" />
+          </div>
+          <div class="product-info">
+            <h3>Eevee</h3>
+            <p>Prismatic Evolutions</p>
+            <div class="product-footer">
+              <span class="price">$19.99</span>
+              <button class="btn btn-sm">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="center-btn">
+        <a href="#shop" class="btn btn-primary">View All Cards</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SEALED PRODUCT -->
+  <section class="sealed" id="shop">
+    <div class="section-inner">
+      <div class="section-header light">
+        <h2>Sealed Product</h2>
+        <p>Booster boxes, ETBs, and packs — sealed and ready to ship</p>
+      </div>
+      <div class="sealed-grid">
+
+        <div class="sealed-card">
+          <div class="sealed-product-img">
+            <img src="https://images.pokemontcg.io/sv3/logo.png" alt="Obsidian Flames" class="sealed-set-logo" />
+            <div class="sealed-cards-fan">
+              <img src="https://images.pokemontcg.io/sv3/125.png" alt="card" class="fan-card fan-c1" />
+              <img src="https://images.pokemontcg.io/sv3/129.png" alt="card" class="fan-card fan-c2" />
+              <img src="https://images.pokemontcg.io/sv3/197.png" alt="card" class="fan-card fan-c3" />
+            </div>
+          </div>
+          <h3>Booster Boxes</h3>
+          <p>36 packs per box. Full sets and modern releases in stock.</p>
+          <a href="#contact" class="btn btn-outline-dark">Inquire</a>
+        </div>
+
+        <div class="sealed-card featured-sealed">
+          <div class="sealed-badge">Most Popular</div>
+          <div class="sealed-product-img">
+            <img src="https://images.pokemontcg.io/sv1/logo.png" alt="Scarlet & Violet" class="sealed-set-logo" />
+            <div class="sealed-cards-fan">
+              <img src="https://images.pokemontcg.io/sv1/193.png" alt="card" class="fan-card fan-c1" />
+              <img src="https://images.pokemontcg.io/sv1/198.png" alt="card" class="fan-card fan-c2" />
+              <img src="https://images.pokemontcg.io/sv1/201.png" alt="card" class="fan-card fan-c3" />
+            </div>
+          </div>
+          <h3>Elite Trainer Boxes</h3>
+          <p>Everything you need to start or expand your collection.</p>
+          <a href="#contact" class="btn btn-primary">Shop ETBs</a>
+        </div>
+
+        <div class="sealed-card">
+          <div class="sealed-product-img">
+            <img src="https://images.pokemontcg.io/sv3pt5/logo.png" alt="151" class="sealed-set-logo" />
+            <div class="sealed-cards-fan">
+              <img src="https://images.pokemontcg.io/sv3pt5/205.png" alt="card" class="fan-card fan-c1" />
+              <img src="https://images.pokemontcg.io/sv3pt5/182.png" alt="card" class="fan-card fan-c2" />
+              <img src="https://images.pokemontcg.io/sv3pt5/207.png" alt="card" class="fan-card fan-c3" />
+            </div>
+          </div>
+          <h3>Booster Packs</h3>
+          <p>Individual packs from your favorite sets. Great for gifts.</p>
+          <a href="#contact" class="btn btn-outline-dark">Inquire</a>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- GRADED CARDS -->
+  <section class="graded" id="graded">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2>Graded Cards</h2>
+        <p>Professionally slabbed and certified — the gold standard for serious collectors</p>
+      </div>
+      <div class="graded-grid">
+
+        <div class="graded-card">
+          <div class="graded-slab">
+            <div class="slab-top">
+              <span class="slab-company">PSA</span>
+              <span class="slab-grade">10</span>
+            </div>
+            <div class="slab-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu" />
+            </div>
+            <div class="slab-label">GEM MINT</div>
+          </div>
+          <div class="graded-info">
+            <h3>Pikachu ex</h3>
+            <p>Scarlet &amp; Violet — PSA 10</p>
+            <div class="product-footer">
+              <span class="price">$149.99</span>
+              <button class="btn btn-sm">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="graded-card featured-graded">
+          <div class="graded-badge">Fan Favorite</div>
+          <div class="graded-slab slab-bgs">
+            <div class="slab-top">
+              <span class="slab-company">BGS</span>
+              <span class="slab-grade">9.5</span>
+            </div>
+            <div class="slab-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png" alt="Charizard" />
+            </div>
+            <div class="slab-label">GEM MINT</div>
+          </div>
+          <div class="graded-info">
+            <h3>Charizard ex</h3>
+            <p>Obsidian Flames — BGS 9.5</p>
+            <div class="product-footer">
+              <span class="price">$299.99</span>
+              <button class="btn btn-sm">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="graded-card">
+          <div class="graded-slab">
+            <div class="slab-top">
+              <span class="slab-company">PSA</span>
+              <span class="slab-grade">9</span>
+            </div>
+            <div class="slab-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/9.png" alt="Blastoise" />
+            </div>
+            <div class="slab-label">MINT</div>
+          </div>
+          <div class="graded-info">
+            <h3>Blastoise ex</h3>
+            <p>Obsidian Flames — PSA 9</p>
+            <div class="product-footer">
+              <span class="price">$189.99</span>
+              <button class="btn btn-sm">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="graded-card">
+          <div class="graded-slab">
+            <div class="slab-top">
+              <span class="slab-company">CGC</span>
+              <span class="slab-grade">10</span>
+            </div>
+            <div class="slab-art">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/282.png" alt="Gardevoir" />
+            </div>
+            <div class="slab-label">PRISTINE</div>
+          </div>
+          <div class="graded-info">
+            <h3>Gardevoir ex</h3>
+            <p>Scarlet &amp; Violet — CGC 10</p>
+            <div class="product-footer">
+              <span class="price">$224.99</span>
+              <button class="btn btn-sm">Add to Cart</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="graded-cta">
+        <div class="graded-cta-inner">
+          <div>
+            <h3>Looking for a specific slab?</h3>
+            <p>We source PSA, BGS, and CGC graded cards on request. Send us a message and we'll track it down.</p>
+          </div>
+          <a href="#contact" class="btn btn-primary">Request a Graded Card</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="about" id="about">
+    <div class="section-inner about-inner">
+      <div class="about-text">
+        <h2>About BigBlastToys TCG</h2>
+        <p>We're a passionate team of collectors and players who started BigBlastToys TCG to make premium Pokemon cards accessible to everyone — from new collectors to competitive players.</p>
+        <p>Every card we sell is hand-inspected and accurately graded. We pack with care and ship fast, because we know how exciting it is to get your order.</p>
+        <ul class="about-perks">
+          <li>Authentic cards — guaranteed</li>
+          <li>Every card individually sleeved</li>
+          <li>Fast tracked shipping on all orders</li>
+          <li>Real humans, real support</li>
+        </ul>
+      </div>
+      <div class="about-art">
+        <img src="logo.png" alt="BigBlastToys TCG" class="about-logo-img" />
+      </div>
+    </div>
+  </section>
+
+  <!-- NEWSLETTER -->
+  <section class="newsletter">
+    <div class="section-inner newsletter-inner">
+      <h2>Stay in the Loop</h2>
+      <p>Get notified when new cards drop, restocks happen, and exclusive deals go live.</p>
+      <form class="newsletter-form" onsubmit="handleSignup(event)">
+        <input type="email" placeholder="your@email.com" required />
+        <button type="submit" class="btn btn-primary">Subscribe</button>
+      </form>
+      <p class="newsletter-fine">No spam. Unsubscribe any time.</p>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="contact" id="contact">
+    <div class="section-inner">
+      <div class="section-header">
+        <h2>Get in Touch</h2>
+        <p>Questions about an order, card availability, or bulk buying? We'd love to hear from you.</p>
+      </div>
+      <form class="contact-form" onsubmit="handleContact(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" placeholder="Your name" required />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" placeholder="your@email.com" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Subject</label>
+          <select>
+            <option>Order Inquiry</option>
+            <option>Card Availability</option>
+            <option>Bulk Purchase</option>
+            <option>Shipping Question</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Message</label>
+          <textarea rows="5" placeholder="Tell us what you need..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Send Message</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a href="#"><img src="logo.png" alt="BigBlastToys TCG" class="footer-logo-img" /></a>
+        <p>Collect. Battle. Win.</p>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Shop</h4>
+          <a href="#featured">Singles</a>
+          <a href="#graded">Graded Cards</a>
+          <a href="#shop">Sealed Product</a>
+          <a href="#shop">Booster Boxes</a>
+          <a href="#shop">ETBs</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="#about">About Us</a>
+          <a href="#contact">Contact</a>
+          <a href="#">Shipping Policy</a>
+          <a href="#">Returns</a>
+        </div>
+        <div class="footer-col">
+          <h4>Follow Us</h4>
+          <a href="#">Instagram</a>
+          <a href="#">Twitter / X</a>
+          <a href="#">TikTok</a>
+          <a href="#">YouTube</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 BigBlastToys TCG. All rights reserved. Not affiliated with Nintendo or The Pokémon Company.</p>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
