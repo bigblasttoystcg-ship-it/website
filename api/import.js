@@ -72,7 +72,10 @@ router.post('/collector', requireAuth, requireAdmin, upload.single('file'), asyn
         [name, set_name, condition]
       );
 
-      const grade = gradeInfo ? gradeInfo.raw : null;
+      // Store clean grade e.g. "PSA 10" not "PSA 10.0 GEM - MT"
+      const grade = (gradeInfo?.company && gradeInfo?.gradeNum)
+        ? `${gradeInfo.company} ${parseFloat(gradeInfo.gradeNum)}`
+        : null;
 
       if (existing.length > 0) {
         // Update stock, price and grade

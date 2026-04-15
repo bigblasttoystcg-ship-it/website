@@ -69,15 +69,15 @@ function extractMarketPrice(tcgplayer) {
 // GET /api/pricesync/preview — show what prices would change (no DB update)
 router.get('/preview', requireAuth, requireAdmin, async (req, res) => {
   const { rows: items } = await req.db.query(
-    `SELECT id, name, set_name, price FROM inventory WHERE category = 'singles' ORDER BY name`
+    `SELECT id, name, set_name, price, category FROM inventory WHERE category IN ('singles','graded') ORDER BY name`
   );
-  res.json({ total: items.length, message: `${items.length} singles will be checked for price updates` });
+  res.json({ total: items.length, message: `${items.length} singles & graded cards will be checked for price updates` });
 });
 
 // POST /api/pricesync/run — sync prices for all singles
 router.post('/run', requireAuth, requireAdmin, async (req, res) => {
   const { rows: items } = await req.db.query(
-    `SELECT id, name, set_name, price FROM inventory WHERE category = 'singles' ORDER BY name`
+    `SELECT id, name, set_name, price, category FROM inventory WHERE category IN ('singles','graded') ORDER BY name`
   );
 
   if (!items.length) return res.json({ updated: 0, skipped: 0, total: 0 });

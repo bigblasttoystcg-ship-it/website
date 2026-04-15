@@ -137,6 +137,16 @@
 <script>
 let currentUser;
 
+// Clean raw grade string to "PSA 10" format
+function cleanGrade(g) {
+  if (!g) return null;
+  const co = ['PSA','BGS','CGC','TAG'].find(c => g.toUpperCase().startsWith(c));
+  const match = g.match(/(\d+(\.\d+)?)/);
+  if (!co || !match) return g;
+  const num = parseFloat(match[1]);
+  return `${co} ${num % 1 === 0 ? num : num}`;
+}
+
 async function loadGraded() {
   const search    = document.getElementById('search').value;
   const condition = document.getElementById('filter-condition').value;
@@ -171,8 +181,8 @@ async function loadGraded() {
         <div class="td-name">${c.name}</div>
         <div class="td-sub">${c.set_name || ''}</div>
       </td>
-      <td>${c.grade
-        ? `<span class="badge badge-purple">${c.grade}</span>`
+      <td>${cleanGrade(c.grade)
+        ? `<span class="badge badge-purple">${cleanGrade(c.grade)}</span>`
         : '<span style="color:var(--muted)">—</span>'}
       </td>
       <td><span class="badge badge-gray">${c.condition}</span></td>
@@ -229,7 +239,7 @@ function openModal(c = null) {
   document.getElementById('f-online').value       = c?.online_stock ?? 0;
   document.getElementById('f-instore').value      = c?.instore_stock ?? 0;
   document.getElementById('f-img').value          = c?.img_url || '';
-  const gradeParts = c?.grade ? c.grade.split(' ') : [];
+  const gradeParts = cleanGrade(c?.grade) ? cleanGrade(c.grade).split(' ') : [];
   document.getElementById('f-grade-company').value = gradeParts[0] || '';
   document.getElementById('f-grade-num').value     = gradeParts[1] || '';
   updateImgPreview(c?.img_url || '');
