@@ -14,6 +14,7 @@
   <div class="main">
     <div class="topbar">
       <div class="page-title" id="page-title">Inventory</div>
+      <button class="btn btn-ghost" id="sync-btn" onclick="syncPrices()">↻ Sync Prices</button>
       <button class="btn btn-ghost" onclick="document.getElementById('import-input').click()">⬆ Import CSV</button>
       <input type="file" id="import-input" accept=".csv" style="display:none" onchange="importCSV(this)">
       <button class="btn btn-primary" onclick="openModal()">+ Add Item</button>
@@ -174,6 +175,7 @@ async function loadInventory() {
       <td><input class="stock-input" type="number" value="${i.instore_stock}" min="0" onchange="updateStock('${i.id}', this, 'instore')" title="In-store stock"></td>
       <td>${stockBadge(i.online_stock, i.instore_stock, i.low_stock_threshold)}</td>
       <td style="display:flex;gap:6px">
+        ${i.category === 'singles' ? `<button class="btn btn-ghost btn-sm" onclick="syncSinglePrice('${i.id}','${i.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="Sync market price">↻</button>` : ''}
         <button class="btn btn-ghost btn-sm" onclick="editItem(${JSON.stringify(i).replace(/"/g, '&quot;')})">Edit</button>
         ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}','${i.name}')">Del</button>` : ''}
       </td>
@@ -249,6 +251,34 @@ async function deleteItem(id, name) {
     showToast(`${name} deleted`);
     loadInventory();
   } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function syncPrices() {
+  const btn = document.getElementById('sync-btn');
+  const { total } = await API.get('/pricesync/preview').catch(() => ({ total: 0 }));
+  if (!confirm(`Sync live market prices for ${total} singles? This may take a minute.`)) return;
+  btn.textContent = '↻ Syncing...';
+  btn.disabled = true;
+  try {
+    const result = await API.post('/pricesync/run', {});
+    showToast(`Updated ${result.updated} of ${result.total} prices!`);
+    loadInventory();
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.textContent = '↻ Sync Prices';
+    btn.disabled = false;
+  }
+}
+
+async function syncSinglePrice(id, name) {
+  try {
+    const result = await API.post(`/pricesync/single/${id}`, {});
+    showToast(`${name} updated: ${fmt(result.old_price)} → ${fmt(result.new_price)}`);
+    loadInventory();
+  } catch (e) {
+    showToast(`${name}: ${e.message}`, 'error');
+  }
 }
 
 async function importCSV(input) {

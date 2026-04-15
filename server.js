@@ -27,6 +27,7 @@ app.use('/api/staff',     require('./api/staff'));
 app.use('/api/settings',  require('./api/settings'));
 app.use('/api/import',    require('./api/import'));
 app.use('/api/sales',     require('./api/sales'));
+app.use('/api/pricesync', require('./api/pricesync'));
 
 // Health check
 app.get('/api/health', async (req, res) => {
