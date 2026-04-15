@@ -63,13 +63,13 @@ router.post('/run', requireAuth, requireAdmin, async (req, res) => {
       // Build search query
       const namePart = `name:"${item.name.replace(/"/g, '')}"`;
       const setPart  = item.set_name ? ` set.name:"${item.set_name.replace(/"/g, '')}"` : '';
-      const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=5&select=name,set,tcgplayer`;
+      const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=5&select=name,set,tcgplayer,images`;
 
       const data = await fetchPokemonTCG(url);
 
       if (!data?.data?.length) {
         // Try name only if set search failed
-        const urlNameOnly = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart)}&pageSize=3&select=name,set,tcgplayer`;
+        const urlNameOnly = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart)}&pageSize=3&select=name,set,tcgplayer,images`;
         const data2 = await fetchPokemonTCG(urlNameOnly);
         if (!data2?.data?.length) { skipped++; continue; }
         data.data = data2.data;
@@ -77,15 +77,19 @@ router.post('/run', requireAuth, requireAdmin, async (req, res) => {
 
       const card = data.data[0];
       const marketPrice = extractMarketPrice(card.tcgplayer);
+      const imgUrl = card.images?.large || card.images?.small || null;
 
-      if (!marketPrice) { skipped++; continue; }
+      if (!marketPrice && !imgUrl) { skipped++; continue; }
 
       const oldPrice = parseFloat(item.price);
-      const newPrice = parseFloat(marketPrice.toFixed(2));
+      const newPrice = marketPrice ? parseFloat(marketPrice.toFixed(2)) : oldPrice;
 
-      await req.db.query('UPDATE inventory SET price = $1 WHERE id = $2', [newPrice, item.id]);
+      await req.db.query(
+        'UPDATE inventory SET price = $1, img_url = COALESCE($2, img_url) WHERE id = $3',
+        [newPrice, imgUrl, item.id]
+      );
 
-      results.push({ name: item.name, set_name: item.set_name, old_price: oldPrice, new_price: newPrice });
+      results.push({ name: item.name, set_name: item.set_name, old_price: oldPrice, new_price: newPrice, img_url: imgUrl });
       updated++;
 
       // Small delay to respect rate limits
@@ -109,18 +113,22 @@ router.post('/single/:id', requireAuth, async (req, res) => {
   try {
     const namePart = `name:"${item.name.replace(/"/g, '')}"`;
     const setPart  = item.set_name ? ` set.name:"${item.set_name.replace(/"/g, '')}"` : '';
-    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=5&select=name,set,tcgplayer`;
+    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=5&select=name,set,tcgplayer,images`;
 
     const data = await fetchPokemonTCG(url);
     const card = data?.data?.[0];
     const marketPrice = extractMarketPrice(card?.tcgplayer);
+    const imgUrl = card?.images?.large || card?.images?.small || null;
 
-    if (!marketPrice) return res.status(404).json({ error: 'No market price found for this card' });
+    if (!marketPrice && !imgUrl) return res.status(404).json({ error: 'No data found for this card' });
 
-    const newPrice = parseFloat(marketPrice.toFixed(2));
-    await req.db.query('UPDATE inventory SET price = $1 WHERE id = $2', [newPrice, item.id]);
+    const newPrice = marketPrice ? parseFloat(marketPrice.toFixed(2)) : parseFloat(item.price);
+    await req.db.query(
+      'UPDATE inventory SET price = $1, img_url = COALESCE($2, img_url) WHERE id = $3',
+      [newPrice, imgUrl, item.id]
+    );
 
-    res.json({ success: true, name: item.name, old_price: item.price, new_price: newPrice });
+    res.json({ success: true, name: item.name, old_price: item.price, new_price: newPrice, img_url: imgUrl });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

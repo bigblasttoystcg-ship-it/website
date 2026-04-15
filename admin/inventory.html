@@ -54,8 +54,8 @@
       <div class="panel">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Card / Product</th><th>Category</th><th>Condition</th><th>Grade</th><th>Price</th><th>Online Stock</th><th>In-Store Stock</th><th>Status</th><th></th></tr></thead>
-            <tbody id="inv-table"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
+            <thead><tr><th></th><th>Card / Product</th><th>Category</th><th>Condition</th><th>Grade</th><th>Price</th><th>Online Stock</th><th>In-Store Stock</th><th>Status</th><th></th></tr></thead>
+            <tbody id="inv-table"><tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -166,6 +166,11 @@ async function loadInventory() {
 
   document.getElementById('inv-table').innerHTML = inv.length ? inv.map(i => `
     <tr>
+      <td style="width:48px">
+        ${i.img_url
+          ? `<img src="${i.img_url}" alt="${i.name}" style="width:44px;height:auto;border-radius:4px;display:block;object-fit:contain">`
+          : `<div style="width:44px;height:60px;background:var(--navy3);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.65rem">No img</div>`}
+      </td>
       <td><div class="td-name">${i.name}</div><div class="td-sub">${i.set_name || ''} ${i.variant ? '· ' + i.variant : ''}</div></td>
       <td><span class="badge badge-blue">${i.category}</span></td>
       <td><span class="badge badge-gray">${i.condition}</span></td>
@@ -180,7 +185,7 @@ async function loadInventory() {
         ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}','${i.name}')">Del</button>` : ''}
       </td>
     </tr>`).join('') :
-    '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">No items found</td></tr>';
+    '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px">No items found</td></tr>';
 }
 
 async function updateStock(id, input, field) {
