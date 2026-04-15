@@ -29,6 +29,20 @@ app.use('/api/import',    require('./api/import'));
 app.use('/api/sales',     require('./api/sales'));
 app.use('/api/pricesync', require('./api/pricesync'));
 
+// Auto-migrate: ensure all columns exist (safe to re-run)
+(async () => {
+  try {
+    await pool.query(`
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS img_url TEXT;
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS grade TEXT;
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS variant TEXT;
+    `);
+    console.log('DB migration OK');
+  } catch (err) {
+    console.error('DB migration error:', err.message);
+  }
+})();
+
 // Health check
 app.get('/api/health', async (req, res) => {
   try {

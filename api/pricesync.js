@@ -134,4 +134,30 @@ router.post('/single/:id', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/pricesync/debug/:id — test what the API returns for a card (no DB changes)
+router.get('/debug/:id', requireAuth, requireAdmin, async (req, res) => {
+  const { rows } = await req.db.query('SELECT * FROM inventory WHERE id = $1', [req.params.id]);
+  const item = rows[0];
+  if (!item) return res.status(404).json({ error: 'Item not found' });
+
+  try {
+    const namePart = `name:"${item.name.replace(/"/g, '')}"`;
+    const setPart  = item.set_name ? ` set.name:"${item.set_name.replace(/"/g, '')}"` : '';
+    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=3&select=name,set,tcgplayer,images`;
+
+    const data = await fetchPokemonTCG(url);
+    const urlNameOnly = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart)}&pageSize=3&select=name,set,tcgplayer,images`;
+    const dataNameOnly = await fetchPokemonTCG(urlNameOnly);
+
+    res.json({
+      item: { id: item.id, name: item.name, set_name: item.set_name, img_url: item.img_url },
+      api_key_set: !!POKEMON_TCG_KEY,
+      query_with_set: { url, results: data?.data?.length || 0, cards: data?.data?.map(c => ({ name: c.name, set: c.set?.name, img: c.images?.large, market: extractMarketPrice(c.tcgplayer) })) },
+      query_name_only: { url: urlNameOnly, results: dataNameOnly?.data?.length || 0, cards: dataNameOnly?.data?.map(c => ({ name: c.name, set: c.set?.name, img: c.images?.large, market: extractMarketPrice(c.tcgplayer) })) },
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
