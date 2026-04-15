@@ -14,23 +14,46 @@
   <div class="main">
     <div class="topbar">
       <div class="page-title" id="page-title">Graded Cards</div>
-      <button class="btn btn-primary" onclick="openModal()">+ Add Card</button>
+      <button class="btn btn-primary" onclick="openModal()">+ Add Graded Card</button>
     </div>
     <div class="content">
       <div class="filters">
-        <select id="filter-status" onchange="loadGraded()">
-          <option value="">All Statuses</option>
-          <option value="sent">Sent</option>
-          <option value="received">Received</option>
-          <option value="listed">Listed</option>
-          <option value="sold">Sold</option>
+        <input type="text" id="search" placeholder="Search cards or sets..." oninput="loadGraded()" style="flex:1;min-width:200px">
+        <select id="filter-condition" onchange="loadGraded()">
+          <option value="">All Conditions</option>
+          <option value="NM">NM</option>
+          <option value="LP">LP</option>
+          <option value="MP">MP</option>
+          <option value="HP">HP</option>
+          <option value="DMG">DMG</option>
+        </select>
+        <select id="sort-by" onchange="loadGraded()">
+          <option value="updated">Recently Updated</option>
+          <option value="price-high">Price: High to Low</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="name-az">Name: A → Z</option>
+          <option value="grade-high">Grade: High to Low</option>
         </select>
       </div>
       <div class="panel">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Card</th><th>Company</th><th>Sent</th><th>Expected Return</th><th>Grade</th><th>Raw Value</th><th>Graded Value</th><th>Status</th><th></th></tr></thead>
-            <tbody id="graded-table"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Card / Set</th>
+                <th>Grade</th>
+                <th>Condition</th>
+                <th>Price</th>
+                <th>Online Stock</th>
+                <th>In-Store Stock</th>
+                <th>Status</th>
+                <th style="text-align:right"></th>
+              </tr>
+            </thead>
+            <tbody id="graded-table">
+              <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -38,36 +61,70 @@
   </div>
 </div>
 
-<!-- Modal -->
+<!-- Add/Edit Modal -->
 <div class="modal-overlay hidden" id="modal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title" id="modal-title">Add to Grading Queue</div>
+      <div class="modal-title" id="modal-title">Add Graded Card</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="edit-id">
+
+      <!-- Image preview -->
+      <div id="modal-img-wrap" style="display:none;text-align:center;margin-bottom:16px">
+        <img id="modal-img" src="" alt="Card image"
+          style="max-height:200px;max-width:100%;border-radius:8px;object-fit:contain;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
+      </div>
+
       <div class="form-row">
         <div class="form-group"><label>Card Name *</label><input type="text" id="f-name" placeholder="Charizard ex"></div>
         <div class="form-group"><label>Set Name</label><input type="text" id="f-set" placeholder="Obsidian Flames"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Grading Company</label>
-          <select id="f-company"><option value="PSA">PSA</option><option value="BGS">BGS</option><option value="CGC">CGC</option></select>
+          <select id="f-grade-company">
+            <option value="">Ungraded</option>
+            <option value="PSA">PSA</option>
+            <option value="BGS">BGS</option>
+            <option value="CGC">CGC</option>
+            <option value="TAG">TAG</option>
+          </select>
         </div>
-        <div class="form-group"><label>Status</label>
-          <select id="f-status"><option value="sent">Sent</option><option value="received">Received</option><option value="listed">Listed</option><option value="sold">Sold</option></select>
+        <div class="form-group"><label>Grade</label>
+          <select id="f-grade-num">
+            <option value="">—</option>
+            <option value="1">1</option><option value="1.5">1.5</option>
+            <option value="2">2</option><option value="2.5">2.5</option>
+            <option value="3">3</option><option value="3.5">3.5</option>
+            <option value="4">4</option><option value="4.5">4.5</option>
+            <option value="5">5</option><option value="5.5">5.5</option>
+            <option value="6">6</option><option value="6.5">6.5</option>
+            <option value="7">7</option><option value="7.5">7.5</option>
+            <option value="8">8</option><option value="8.5">8.5</option>
+            <option value="9">9</option><option value="9.5">9.5</option>
+            <option value="10">10</option>
+          </select>
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Sent Date</label><input type="date" id="f-sent"></div>
-        <div class="form-group"><label>Expected Return</label><input type="date" id="f-return"></div>
+        <div class="form-group"><label>Condition</label>
+          <select id="f-condition">
+            <option value="NM">NM</option><option value="LP">LP</option>
+            <option value="MP">MP</option><option value="HP">HP</option><option value="DMG">DMG</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Price ($)</label>
+          <input type="number" id="f-price" placeholder="0.00" step="0.01" min="0">
+        </div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Raw Value ($)</label><input type="number" id="f-raw" placeholder="0.00" step="0.01" min="0"></div>
-        <div class="form-group"><label>Grade Received</label><input type="text" id="f-grade" placeholder="10 / 9.5 / PSA 9"></div>
+        <div class="form-group"><label>Online Stock</label><input type="number" id="f-online" value="0" min="0"></div>
+        <div class="form-group"><label>In-Store Stock</label><input type="number" id="f-instore" value="0" min="0"></div>
       </div>
-      <div class="form-group"><label>Graded Value ($)</label><input type="number" id="f-graded" placeholder="0.00" step="0.01" min="0"></div>
+      <div class="form-group"><label>Image URL</label>
+        <input type="url" id="f-img" placeholder="https://..." oninput="updateImgPreview(this.value)">
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -78,79 +135,148 @@
 
 <div class="toast" id="toast"></div>
 <script>
-const statusBadge = s => ({
-  sent:     '<span class="badge badge-blue">Sent</span>',
-  received: '<span class="badge badge-purple">Received</span>',
-  listed:   '<span class="badge badge-ok">Listed</span>',
-  sold:     '<span class="badge badge-gray">Sold</span>',
-}[s] || s);
+let currentUser;
 
 async function loadGraded() {
-  const status = document.getElementById('filter-status').value;
-  const data = await API.get('/graded' + (status ? `?status=${status}` : '')).catch(() => []);
+  const search    = document.getElementById('search').value;
+  const condition = document.getElementById('filter-condition').value;
+  const sortBy    = document.getElementById('sort-by').value;
+  const params    = new URLSearchParams({ search, category: 'graded', condition });
+  let data = await API.get('/inventory?' + params).catch(() => []);
+
+  data.sort((a, b) => {
+    switch (sortBy) {
+      case 'price-high': return b.price - a.price;
+      case 'price-low':  return a.price - b.price;
+      case 'name-az':    return a.name.localeCompare(b.name);
+      case 'grade-high': {
+        const ga = parseFloat((a.grade || '').split(' ')[1]) || 0;
+        const gb = parseFloat((b.grade || '').split(' ')[1]) || 0;
+        return gb - ga;
+      }
+      default: return 0;
+    }
+  });
+
+  const isAdmin = currentUser?.role === 'admin';
+
   document.getElementById('graded-table').innerHTML = data.length ? data.map(c => `
-    <tr>
-      <td><div class="td-name">${c.name}</div><div class="td-sub">${c.set_name || ''}</div></td>
-      <td><span class="badge badge-blue">${c.grading_company || '—'}</span></td>
-      <td style="color:var(--muted)">${c.sent_date ? new Date(c.sent_date).toLocaleDateString() : '—'}</td>
-      <td style="color:var(--muted)">${c.expected_return ? new Date(c.expected_return).toLocaleDateString() : '—'}</td>
-      <td style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--blue)">${c.grade_received || '—'}</td>
-      <td>${c.raw_value ? fmt(c.raw_value) : '—'}</td>
-      <td>${c.graded_value ? fmt(c.graded_value) : '—'}</td>
-      <td>${statusBadge(c.status)}</td>
-      <td style="display:flex;gap:6px">
-        <button class="btn btn-ghost btn-sm" onclick="editCard(${JSON.stringify(c).replace(/"/g,'&quot;')})">Edit</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteCard('${c.id}','${c.name}')">Del</button>
+    <tr style="cursor:pointer" onclick="editCard(${JSON.stringify(c).replace(/"/g,'&quot;')})">
+      <td style="width:48px" onclick="event.stopPropagation()">
+        ${c.img_url
+          ? `<img src="${c.img_url}" alt="${c.name}" style="width:44px;height:auto;border-radius:4px;display:block;object-fit:contain">`
+          : `<div style="width:44px;height:60px;background:var(--navy3);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.65rem">No img</div>`}
+      </td>
+      <td>
+        <div class="td-name">${c.name}</div>
+        <div class="td-sub">${c.set_name || ''}</div>
+      </td>
+      <td>${c.grade
+        ? `<span class="badge badge-purple">${c.grade}</span>`
+        : '<span style="color:var(--muted)">—</span>'}
+      </td>
+      <td><span class="badge badge-gray">${c.condition}</span></td>
+      <td>${fmt(c.price)}</td>
+      <td onclick="event.stopPropagation()">
+        <input class="stock-input" type="number" value="${c.online_stock}" min="0"
+          onchange="updateStock('${c.id}', this, 'online')" title="Online stock">
+      </td>
+      <td onclick="event.stopPropagation()">
+        <input class="stock-input" type="number" value="${c.instore_stock}" min="0"
+          onchange="updateStock('${c.id}', this, 'instore')" title="In-store stock">
+      </td>
+      <td>${stockBadge(c.online_stock, c.instore_stock, c.low_stock_threshold)}</td>
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex;gap:4px;justify-content:flex-end;align-items:center;white-space:nowrap">
+          ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteCard('${c.id}','${c.name}');event.stopPropagation()">Del</button>` : ''}
+        </div>
       </td>
     </tr>`).join('') :
     '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">No graded cards found</td></tr>';
 }
 
+async function updateStock(id, input, field) {
+  const item = await API.get(`/inventory/${id}`).catch(() => null);
+  if (!item) return;
+  const online  = field === 'online'  ? parseInt(input.value) : item.online_stock;
+  const instore = field === 'instore' ? parseInt(input.value) : item.instore_stock;
+  try {
+    await API.patch(`/inventory/${id}/stock`, { online_stock: online, instore_stock: instore });
+    showToast('Stock updated');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+function updateImgPreview(url) {
+  const wrap = document.getElementById('modal-img-wrap');
+  const img  = document.getElementById('modal-img');
+  if (url) {
+    img.src = url;
+    wrap.style.display = 'block';
+    img.onerror = () => { wrap.style.display = 'none'; };
+    img.onload  = () => { wrap.style.display = 'block'; };
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
 function openModal(c = null) {
-  document.getElementById('edit-id').value     = c?.id || '';
-  document.getElementById('modal-title').textContent = c ? 'Edit Graded Card' : 'Add to Grading Queue';
-  document.getElementById('f-name').value      = c?.name || '';
-  document.getElementById('f-set').value       = c?.set_name || '';
-  document.getElementById('f-company').value   = c?.grading_company || 'PSA';
-  document.getElementById('f-status').value    = c?.status || 'sent';
-  document.getElementById('f-sent').value      = c?.sent_date?.slice(0,10) || '';
-  document.getElementById('f-return').value    = c?.expected_return?.slice(0,10) || '';
-  document.getElementById('f-raw').value       = c?.raw_value || '';
-  document.getElementById('f-grade').value     = c?.grade_received || '';
-  document.getElementById('f-graded').value    = c?.graded_value || '';
+  document.getElementById('edit-id').value        = c?.id || '';
+  document.getElementById('modal-title').textContent = c ? 'Edit Graded Card' : 'Add Graded Card';
+  document.getElementById('f-name').value         = c?.name || '';
+  document.getElementById('f-set').value          = c?.set_name || '';
+  document.getElementById('f-condition').value    = c?.condition || 'NM';
+  document.getElementById('f-price').value        = c?.price || '';
+  document.getElementById('f-online').value       = c?.online_stock ?? 0;
+  document.getElementById('f-instore').value      = c?.instore_stock ?? 0;
+  document.getElementById('f-img').value          = c?.img_url || '';
+  const gradeParts = c?.grade ? c.grade.split(' ') : [];
+  document.getElementById('f-grade-company').value = gradeParts[0] || '';
+  document.getElementById('f-grade-num').value     = gradeParts[1] || '';
+  updateImgPreview(c?.img_url || '');
   document.getElementById('modal').classList.remove('hidden');
 }
 
 function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-function editCard(c) { openModal(c); }
+function editCard(c)  { openModal(c); }
 
 async function saveCard() {
   const id = document.getElementById('edit-id').value;
+  const co  = document.getElementById('f-grade-company').value;
+  const num = document.getElementById('f-grade-num').value;
   const body = {
-    name: document.getElementById('f-name').value,
-    set_name: document.getElementById('f-set').value,
-    grading_company: document.getElementById('f-company').value,
-    status: document.getElementById('f-status').value,
-    sent_date: document.getElementById('f-sent').value || null,
-    expected_return: document.getElementById('f-return').value || null,
-    raw_value: parseFloat(document.getElementById('f-raw').value) || null,
-    grade_received: document.getElementById('f-grade').value || null,
-    graded_value: parseFloat(document.getElementById('f-graded').value) || null,
+    name:               document.getElementById('f-name').value,
+    set_name:           document.getElementById('f-set').value,
+    category:           'graded',
+    condition:          document.getElementById('f-condition').value,
+    price:              parseFloat(document.getElementById('f-price').value) || 0,
+    online_stock:       parseInt(document.getElementById('f-online').value) || 0,
+    instore_stock:      parseInt(document.getElementById('f-instore').value) || 0,
+    low_stock_threshold: 1,
+    grade:              (co && num) ? `${co} ${num}` : null,
+    img_url:            document.getElementById('f-img').value || null,
+    variant:            null,
   };
   try {
-    if (id) { await API.put(`/graded/${id}`, body); showToast('Card updated'); }
-    else { await API.post('/graded', body); showToast('Card added to queue'); }
-    closeModal(); loadGraded();
+    if (id) { await API.put(`/inventory/${id}`, body); showToast('Card updated'); }
+    else     { await API.post('/inventory', body);      showToast('Card added'); }
+    closeModal();
+    loadGraded();
   } catch (e) { showToast(e.message, 'error'); }
 }
 
 async function deleteCard(id, name) {
-  if (!confirm(`Delete "${name}"?`)) return;
-  try { await API.delete(`/graded/${id}`); showToast(`${name} deleted`); loadGraded(); }
-  catch (e) { showToast(e.message, 'error'); }
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try {
+    await API.delete(`/inventory/${id}`);
+    showToast(`${name} deleted`);
+    loadGraded();
+  } catch (e) { showToast(e.message, 'error'); }
 }
 
-(async () => { await initPage('Graded Cards'); loadGraded(); })();
+(async () => {
+  currentUser = await initPage('Graded Cards');
+  loadGraded();
+})();
 </script>
 </body>
 </html>
