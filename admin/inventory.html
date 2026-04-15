@@ -72,6 +72,13 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="edit-id">
+
+      <!-- Card image preview (only shown when an image exists) -->
+      <div id="modal-img-wrap" style="display:none;text-align:center;margin-bottom:16px">
+        <img id="modal-img" src="" alt="Card image"
+          style="max-height:200px;max-width:100%;border-radius:8px;object-fit:contain;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
+      </div>
+
       <div class="form-row">
         <div class="form-group"><label>Name *</label><input type="text" id="f-name" placeholder="Charizard ex"></div>
         <div class="form-group"><label>Set Name</label><input type="text" id="f-set" placeholder="Obsidian Flames"></div>
@@ -128,7 +135,7 @@
           </select>
         </div>
       </div>
-      <div class="form-group"><label>Image URL</label><input type="url" id="f-img" placeholder="https://..."></div>
+      <div class="form-group"><label>Image URL</label><input type="url" id="f-img" placeholder="https://..." oninput="updateImgPreview(this.value)"></div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -217,10 +224,24 @@ function openModal(item = null) {
   document.getElementById('f-grade-company').value = gradeParts[0] || '';
   document.getElementById('f-grade-num').value     = gradeParts[1] || '';
   document.getElementById('f-img').value       = item?.img_url || '';
+  updateImgPreview(item?.img_url || '');
   document.getElementById('modal').classList.remove('hidden');
 }
 
 function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+function updateImgPreview(url) {
+  const wrap = document.getElementById('modal-img-wrap');
+  const img  = document.getElementById('modal-img');
+  if (url) {
+    img.src = url;
+    wrap.style.display = 'block';
+    img.onerror = () => { wrap.style.display = 'none'; };
+    img.onload  = () => { wrap.style.display = 'block'; };
+  } else {
+    wrap.style.display = 'none';
+  }
+}
 
 function editItem(item) { openModal(item); }
 
