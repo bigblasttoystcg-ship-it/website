@@ -54,7 +54,7 @@
       <div class="panel">
         <div class="table-wrap">
           <table>
-            <thead><tr><th></th><th>Card / Product</th><th>Category</th><th>Condition</th><th>Grade</th><th>Price</th><th>Online Stock</th><th>In-Store Stock</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Card / Product</th><th>Category</th><th>Condition</th><th>Grade</th><th>Price</th><th>Online Stock</th><th>In-Store Stock</th><th>Status</th><th style="text-align:right"></th></tr></thead>
             <tbody id="inv-table"><tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
@@ -164,9 +164,10 @@ async function loadInventory() {
   });
   const isAdmin = currentUser?.role === 'admin';
 
+  const iData = i => JSON.stringify(i).replace(/"/g, '&quot;');
   document.getElementById('inv-table').innerHTML = inv.length ? inv.map(i => `
-    <tr>
-      <td style="width:48px">
+    <tr style="cursor:pointer" onclick="editItem(${iData(i)})">
+      <td style="width:48px" onclick="event.stopPropagation()">
         ${i.img_url
           ? `<img src="${i.img_url}" alt="${i.name}" style="width:44px;height:auto;border-radius:4px;display:block;object-fit:contain">`
           : `<div style="width:44px;height:60px;background:var(--navy3);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.65rem">No img</div>`}
@@ -176,13 +177,14 @@ async function loadInventory() {
       <td><span class="badge badge-gray">${i.condition}</span></td>
       <td>${i.grade ? `<span class="badge badge-purple" title="${i.grade}">${i.grade.split(' ').slice(0,2).join(' ')}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
       <td>${fmt(i.price)}</td>
-      <td><input class="stock-input" type="number" value="${i.online_stock}" min="0" onchange="updateStock('${i.id}', this, 'online')" title="Online stock"></td>
-      <td><input class="stock-input" type="number" value="${i.instore_stock}" min="0" onchange="updateStock('${i.id}', this, 'instore')" title="In-store stock"></td>
+      <td onclick="event.stopPropagation()"><input class="stock-input" type="number" value="${i.online_stock}" min="0" onchange="updateStock('${i.id}', this, 'online')" title="Online stock"></td>
+      <td onclick="event.stopPropagation()"><input class="stock-input" type="number" value="${i.instore_stock}" min="0" onchange="updateStock('${i.id}', this, 'instore')" title="In-store stock"></td>
       <td>${stockBadge(i.online_stock, i.instore_stock, i.low_stock_threshold)}</td>
-      <td style="display:flex;gap:6px">
-        ${i.category === 'singles' ? `<button class="btn btn-ghost btn-sm" onclick="syncSinglePrice('${i.id}','${i.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="Sync market price">↻</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="editItem(${JSON.stringify(i).replace(/"/g, '&quot;')})">Edit</button>
-        ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}','${i.name}')">Del</button>` : ''}
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex;gap:4px;justify-content:flex-end;align-items:center;white-space:nowrap">
+          ${i.category === 'singles' ? `<button class="btn btn-ghost btn-sm" onclick="syncSinglePrice('${i.id}','${i.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="Sync market price">↻</button>` : ''}
+          ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}','${i.name}');event.stopPropagation()">Del</button>` : ''}
+        </div>
       </td>
     </tr>`).join('') :
     '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px">No items found</td></tr>';
