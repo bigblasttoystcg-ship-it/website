@@ -92,7 +92,41 @@
         <div class="form-group"><label>Online Stock</label><input type="number" id="f-online" value="0" min="0"></div>
         <div class="form-group"><label>In-Store Stock</label><input type="number" id="f-instore" value="0" min="0"></div>
       </div>
-      <div class="form-group"><label>Grade (e.g. PSA 10, BGS 9.5)</label><input type="text" id="f-grade" placeholder="PSA 10 / BGS 9.5 / CGC 10"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Grading Company</label>
+          <select id="f-grade-company">
+            <option value="">Ungraded</option>
+            <option value="PSA">PSA</option>
+            <option value="BGS">BGS</option>
+            <option value="CGC">CGC</option>
+            <option value="TAG">TAG</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Grade</label>
+          <select id="f-grade-num">
+            <option value="">—</option>
+            <option value="1">1</option>
+            <option value="1.5">1.5</option>
+            <option value="2">2</option>
+            <option value="2.5">2.5</option>
+            <option value="3">3</option>
+            <option value="3.5">3.5</option>
+            <option value="4">4</option>
+            <option value="4.5">4.5</option>
+            <option value="5">5</option>
+            <option value="5.5">5.5</option>
+            <option value="6">6</option>
+            <option value="6.5">6.5</option>
+            <option value="7">7</option>
+            <option value="7.5">7.5</option>
+            <option value="8">8</option>
+            <option value="8.5">8.5</option>
+            <option value="9">9</option>
+            <option value="9.5">9.5</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+      </div>
       <div class="form-group"><label>Image URL</label><input type="url" id="f-img" placeholder="https://..."></div>
     </div>
     <div class="modal-footer">
@@ -170,7 +204,9 @@ function openModal(item = null) {
   document.getElementById('f-online').value    = item?.online_stock ?? 0;
   document.getElementById('f-instore').value   = item?.instore_stock ?? 0;
   document.getElementById('f-threshold').value = item?.low_stock_threshold ?? 3;
-  document.getElementById('f-grade').value     = item?.grade || '';
+  const gradeParts = item?.grade ? item.grade.split(' ') : [];
+  document.getElementById('f-grade-company').value = gradeParts[0] || '';
+  document.getElementById('f-grade-num').value     = gradeParts[1] || '';
   document.getElementById('f-img').value       = item?.img_url || '';
   document.getElementById('modal').classList.remove('hidden');
 }
@@ -191,7 +227,11 @@ async function saveItem() {
     online_stock: parseInt(document.getElementById('f-online').value) || 0,
     instore_stock: parseInt(document.getElementById('f-instore').value) || 0,
     low_stock_threshold: parseInt(document.getElementById('f-threshold').value) || 3,
-    grade:   document.getElementById('f-grade').value || null,
+    grade:   (() => {
+      const co = document.getElementById('f-grade-company').value;
+      const num = document.getElementById('f-grade-num').value;
+      return co && num ? `${co} ${num}` : null;
+    })(),
     img_url: document.getElementById('f-img').value,
   };
   try {
