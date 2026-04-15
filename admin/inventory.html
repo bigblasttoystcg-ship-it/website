@@ -40,6 +40,15 @@
           <option value="low">Low Stock</option>
           <option value="out">Out Online</option>
         </select>
+        <select id="sort-by" onchange="loadInventory()">
+          <option value="updated">Recently Updated</option>
+          <option value="price-high">Price: High to Low</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="name-az">Name: A → Z</option>
+          <option value="name-za">Name: Z → A</option>
+          <option value="stock-high">Stock: Most First</option>
+          <option value="stock-low">Stock: Least First</option>
+        </select>
       </div>
       <div class="panel">
         <div class="table-wrap">
@@ -101,8 +110,22 @@ async function loadInventory() {
   const category = document.getElementById('filter-category').value;
   const condition= document.getElementById('filter-condition').value;
   const stock    = document.getElementById('filter-stock').value;
+  const sortBy   = document.getElementById('sort-by').value;
   const params   = new URLSearchParams({ search, category, condition, stock });
-  const inv = await API.get('/inventory?' + params).catch(() => []);
+  let inv = await API.get('/inventory?' + params).catch(() => []);
+
+  // Client-side sort
+  inv.sort((a, b) => {
+    switch (sortBy) {
+      case 'price-high':  return b.price - a.price;
+      case 'price-low':   return a.price - b.price;
+      case 'name-az':     return a.name.localeCompare(b.name);
+      case 'name-za':     return b.name.localeCompare(a.name);
+      case 'stock-high':  return (b.online_stock + b.instore_stock) - (a.online_stock + a.instore_stock);
+      case 'stock-low':   return (a.online_stock + a.instore_stock) - (b.online_stock + b.instore_stock);
+      default:            return 0; // updated — already sorted by API
+    }
+  });
   const isAdmin = currentUser?.role === 'admin';
 
   document.getElementById('inv-table').innerHTML = inv.length ? inv.map(i => `
