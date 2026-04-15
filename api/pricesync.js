@@ -25,6 +25,33 @@ function fetchPokemonTCG(url) {
   });
 }
 
+// Pick the card result that best matches our set name
+function findBestCard(cards, itemSetName) {
+  if (!cards?.length) return null;
+  if (cards.length === 1) return cards[0];
+  if (!itemSetName) return cards[0];
+
+  const setLower = itemSetName.toLowerCase().trim();
+
+  const scored = cards.map(card => {
+    const cardSet = (card.set?.name || '').toLowerCase().trim();
+    let score = 0;
+    if (cardSet === setLower) score = 100;
+    else if (cardSet.includes(setLower) || setLower.includes(cardSet)) score = 60;
+    else {
+      // word overlap — ignore short words like "and", "the"
+      const setWords  = setLower.split(/\s+/).filter(w => w.length > 2);
+      const cardWords = cardSet.split(/\s+/);
+      const overlap   = setWords.filter(w => cardWords.some(cw => cw.includes(w) || w.includes(cw))).length;
+      score = overlap * 15;
+    }
+    return { card, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0].card;
+}
+
 // Extract best market price from TCGPlayer price object
 function extractMarketPrice(tcgplayer) {
   if (!tcgplayer?.prices) return null;
@@ -62,20 +89,21 @@ router.post('/run', requireAuth, requireAdmin, async (req, res) => {
     try {
       // Build search query
       const namePart = `name:"${item.name.replace(/"/g, '')}"`;
-      const setPart  = item.set_name ? ` set.name:"${item.set_name.replace(/"/g, '')}"` : '';
-      const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=5&select=name,set,tcgplayer,images`;
+      // No quotes on set name → API does partial match (e.g. "Obsidian Flames" matches "Scarlet & Violet—Obsidian Flames")
+      const setPart  = item.set_name ? ` set.name:${item.set_name.replace(/"/g, '')}` : '';
+      const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=8&select=name,set,tcgplayer,images`;
 
       const data = await fetchPokemonTCG(url);
 
       if (!data?.data?.length) {
         // Try name only if set search failed
-        const urlNameOnly = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart)}&pageSize=3&select=name,set,tcgplayer,images`;
+        const urlNameOnly = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart)}&pageSize=10&select=name,set,tcgplayer,images`;
         const data2 = await fetchPokemonTCG(urlNameOnly);
         if (!data2?.data?.length) { skipped++; continue; }
         data.data = data2.data;
       }
 
-      const card = data.data[0];
+      const card = findBestCard(data.data, item.set_name);
       const marketPrice = extractMarketPrice(card.tcgplayer);
       const imgUrl = card.images?.large || card.images?.small || null;
 
@@ -85,7 +113,7 @@ router.post('/run', requireAuth, requireAdmin, async (req, res) => {
       const newPrice = marketPrice ? parseFloat(marketPrice.toFixed(2)) : oldPrice;
 
       await req.db.query(
-        'UPDATE inventory SET price = $1, img_url = COALESCE($2, img_url) WHERE id = $3',
+        'UPDATE inventory SET price = $1, img_url = COALESCE($2, img_url), updated_at = NOW() WHERE id = $3',
         [newPrice, imgUrl, item.id]
       );
 
@@ -112,11 +140,15 @@ router.post('/single/:id', requireAuth, async (req, res) => {
 
   try {
     const namePart = `name:"${item.name.replace(/"/g, '')}"`;
-    const setPart  = item.set_name ? ` set.name:"${item.set_name.replace(/"/g, '')}"` : '';
-    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=5&select=name,set,tcgplayer,images`;
+    const setPart  = item.set_name ? ` set.name:${item.set_name.replace(/"/g, '')}` : '';
+    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=8&select=name,set,tcgplayer,images`;
 
-    const data = await fetchPokemonTCG(url);
-    const card = data?.data?.[0];
+    let data = await fetchPokemonTCG(url);
+    if (!data?.data?.length) {
+      const urlNameOnly = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart)}&pageSize=10&select=name,set,tcgplayer,images`;
+      data = await fetchPokemonTCG(urlNameOnly);
+    }
+    const card = findBestCard(data?.data, item.set_name);
     const marketPrice = extractMarketPrice(card?.tcgplayer);
     const imgUrl = card?.images?.large || card?.images?.small || null;
 
@@ -124,7 +156,7 @@ router.post('/single/:id', requireAuth, async (req, res) => {
 
     const newPrice = marketPrice ? parseFloat(marketPrice.toFixed(2)) : parseFloat(item.price);
     await req.db.query(
-      'UPDATE inventory SET price = $1, img_url = COALESCE($2, img_url) WHERE id = $3',
+      'UPDATE inventory SET price = $1, img_url = COALESCE($2, img_url), updated_at = NOW() WHERE id = $3',
       [newPrice, imgUrl, item.id]
     );
 
