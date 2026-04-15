@@ -53,8 +53,8 @@
       <div class="panel">
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Card / Product</th><th>Category</th><th>Condition</th><th>Price</th><th>Online Stock</th><th>In-Store Stock</th><th>Status</th><th></th></tr></thead>
-            <tbody id="inv-table"><tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
+            <thead><tr><th>Card / Product</th><th>Category</th><th>Condition</th><th>Grade</th><th>Price</th><th>Online Stock</th><th>In-Store Stock</th><th>Status</th><th></th></tr></thead>
+            <tbody id="inv-table"><tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -92,6 +92,7 @@
         <div class="form-group"><label>Online Stock</label><input type="number" id="f-online" value="0" min="0"></div>
         <div class="form-group"><label>In-Store Stock</label><input type="number" id="f-instore" value="0" min="0"></div>
       </div>
+      <div class="form-group"><label>Grade (e.g. PSA 10, BGS 9.5)</label><input type="text" id="f-grade" placeholder="PSA 10 / BGS 9.5 / CGC 10"></div>
       <div class="form-group"><label>Image URL</label><input type="url" id="f-img" placeholder="https://..."></div>
     </div>
     <div class="modal-footer">
@@ -133,6 +134,7 @@ async function loadInventory() {
       <td><div class="td-name">${i.name}</div><div class="td-sub">${i.set_name || ''} ${i.variant ? '· ' + i.variant : ''}</div></td>
       <td><span class="badge badge-blue">${i.category}</span></td>
       <td><span class="badge badge-gray">${i.condition}</span></td>
+      <td>${i.grade ? `<span class="badge badge-purple" title="${i.grade}">${i.grade.split(' ').slice(0,2).join(' ')}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
       <td>${fmt(i.price)}</td>
       <td><input class="stock-input" type="number" value="${i.online_stock}" min="0" onchange="updateStock('${i.id}', this, 'online')" title="Online stock"></td>
       <td><input class="stock-input" type="number" value="${i.instore_stock}" min="0" onchange="updateStock('${i.id}', this, 'instore')" title="In-store stock"></td>
@@ -142,7 +144,7 @@ async function loadInventory() {
         ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}','${i.name}')">Del</button>` : ''}
       </td>
     </tr>`).join('') :
-    '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:32px">No items found</td></tr>';
+    '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">No items found</td></tr>';
 }
 
 async function updateStock(id, input, field) {
@@ -168,6 +170,7 @@ function openModal(item = null) {
   document.getElementById('f-online').value    = item?.online_stock ?? 0;
   document.getElementById('f-instore').value   = item?.instore_stock ?? 0;
   document.getElementById('f-threshold').value = item?.low_stock_threshold ?? 3;
+  document.getElementById('f-grade').value     = item?.grade || '';
   document.getElementById('f-img').value       = item?.img_url || '';
   document.getElementById('modal').classList.remove('hidden');
 }
@@ -188,6 +191,7 @@ async function saveItem() {
     online_stock: parseInt(document.getElementById('f-online').value) || 0,
     instore_stock: parseInt(document.getElementById('f-instore').value) || 0,
     low_stock_threshold: parseInt(document.getElementById('f-threshold').value) || 3,
+    grade:   document.getElementById('f-grade').value || null,
     img_url: document.getElementById('f-img').value,
   };
   try {

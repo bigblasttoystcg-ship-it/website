@@ -72,18 +72,20 @@ router.post('/collector', requireAuth, requireAdmin, upload.single('file'), asyn
         [name, set_name, condition]
       );
 
+      const grade = gradeInfo ? gradeInfo.raw : null;
+
       if (existing.length > 0) {
-        // Update stock and price
+        // Update stock, price and grade
         await req.db.query(
-          'UPDATE inventory SET online_stock = online_stock + $1, price = $2 WHERE id = $3',
-          [quantity, price, existing[0].id]
+          'UPDATE inventory SET online_stock = online_stock + $1, price = $2, grade = $3 WHERE id = $4',
+          [quantity, price, grade, existing[0].id]
         );
       } else {
         // Insert new item
         await req.db.query(
-          `INSERT INTO inventory (name, set_name, variant, category, condition, price, online_stock, instore_stock)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,0)`,
-          [name, set_name, variant, category, condition, price, quantity]
+          `INSERT INTO inventory (name, set_name, variant, category, condition, price, online_stock, instore_stock, grade)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,0,$8)`,
+          [name, set_name, variant, category, condition, price, quantity, grade]
         );
       }
       imported++;
