@@ -14,6 +14,7 @@
   <div class="main">
     <div class="topbar">
       <div class="page-title" id="page-title">Orders</div>
+      <button class="btn btn-primary" onclick="openSaleModal()">+ Record Sale</button>
     </div>
     <div class="content">
       <div class="filters">
@@ -37,6 +38,73 @@
           </table>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Record Sale Modal -->
+<div class="modal-overlay hidden" id="sale-modal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title">Record a Sale</div>
+      <button class="modal-close" onclick="closeSaleModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step 1: Search -->
+      <div id="sale-step-1">
+        <div class="form-group">
+          <label>Search Inventory</label>
+          <input type="text" id="sale-search" placeholder="Search by card name or set..." oninput="searchInventory()">
+        </div>
+        <div id="sale-search-results" style="display:none;margin-top:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:280px;overflow-y:auto"></div>
+      </div>
+
+      <!-- Step 2: Confirm card -->
+      <div id="sale-step-2" style="display:none">
+        <div style="background:var(--navy3);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:4px">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px">Confirm Card Details</div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:#fff" id="confirm-name"></div>
+          <div style="color:var(--muted);font-size:0.8rem;margin-top:2px" id="confirm-set"></div>
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap" id="confirm-badges"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">
+            <div><div style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Online Stock</div><div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--blue)" id="confirm-online"></div></div>
+            <div><div style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">In-Store Stock</div><div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--green)" id="confirm-instore"></div></div>
+          </div>
+        </div>
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 14px;font-size:0.8rem;color:var(--red);margin-bottom:4px">
+          ⚠ Verify the grade and condition above before continuing.
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Channel</label>
+            <select id="sale-channel">
+              <option value="online">Online</option>
+              <option value="instore">In-Store</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Quantity</label>
+            <input type="number" id="sale-qty" value="1" min="1">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Customer Name</label>
+            <input type="text" id="sale-customer" placeholder="Walk-in">
+          </div>
+          <div class="form-group">
+            <label>Sale Price ($)</label>
+            <input type="number" id="sale-price" step="0.01" min="0" placeholder="Uses list price if blank">
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="sale-back-btn" onclick="backToSearch()" style="display:none">← Back</button>
+      <button class="btn btn-ghost" onclick="closeSaleModal()">Cancel</button>
+      <button class="btn btn-primary" id="sale-confirm-btn" onclick="confirmSale()" style="display:none">Confirm Sale</button>
     </div>
   </div>
 </div>
@@ -125,6 +193,104 @@ async function setStatus(id, status) {
 }
 
 function closeOrderModal() { document.getElementById('order-modal').classList.add('hidden'); }
+
+// ── Record Sale ───────────────────────────────────────────
+let selectedItem = null;
+
+function openSaleModal() {
+  selectedItem = null;
+  document.getElementById('sale-search').value = '';
+  document.getElementById('sale-search-results').style.display = 'none';
+  document.getElementById('sale-search-results').innerHTML = '';
+  document.getElementById('sale-step-1').style.display = 'block';
+  document.getElementById('sale-step-2').style.display = 'none';
+  document.getElementById('sale-back-btn').style.display = 'none';
+  document.getElementById('sale-confirm-btn').style.display = 'none';
+  document.getElementById('sale-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('sale-search').focus(), 100);
+}
+
+function closeSaleModal() { document.getElementById('sale-modal').classList.add('hidden'); }
+
+let searchTimer;
+async function searchInventory() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(async () => {
+    const q = document.getElementById('sale-search').value.trim();
+    const results = document.getElementById('sale-search-results');
+    if (!q) { results.style.display = 'none'; return; }
+    const inv = await API.get(`/inventory?search=${encodeURIComponent(q)}`).catch(() => []);
+    if (!inv.length) {
+      results.innerHTML = '<div style="padding:14px;color:var(--muted);font-size:0.85rem;text-align:center">No cards found</div>';
+      results.style.display = 'block';
+      return;
+    }
+    results.innerHTML = inv.slice(0, 8).map(i => `
+      <div onclick='selectItem(${JSON.stringify(i).replace(/'/g,"&#39;")})' style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s" onmouseover="this.style.background='rgba(0,170,255,0.06)'" onmouseout="this.style.background=''">
+        <div>
+          <div style="font-weight:600;font-size:0.88rem">${i.name}</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">${i.set_name || ''} ${i.grade ? '· <span style="color:#a78bfa">' + i.grade + '</span>' : ''} · ${i.condition}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0;margin-left:12px">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--blue)">${fmt(i.price)}</div>
+          <div style="font-size:0.72rem;color:var(--muted)">Online: ${i.online_stock} · Store: ${i.instore_stock}</div>
+        </div>
+      </div>`).join('');
+    results.style.display = 'block';
+  }, 250);
+}
+
+function selectItem(item) {
+  selectedItem = item;
+  document.getElementById('sale-step-1').style.display = 'none';
+  document.getElementById('sale-step-2').style.display = 'block';
+  document.getElementById('sale-back-btn').style.display = 'inline-flex';
+  document.getElementById('sale-confirm-btn').style.display = 'inline-flex';
+  document.getElementById('sale-price').value = item.price || '';
+
+  document.getElementById('confirm-name').textContent = item.name;
+  document.getElementById('confirm-set').textContent  = [item.set_name, item.variant].filter(Boolean).join(' · ');
+  document.getElementById('confirm-online').textContent  = item.online_stock;
+  document.getElementById('confirm-instore').textContent = item.instore_stock;
+
+  const badges = [];
+  if (item.grade)     badges.push(`<span class="badge badge-purple">${item.grade}</span>`);
+  if (item.condition) badges.push(`<span class="badge badge-gray">${item.condition}</span>`);
+  if (item.category)  badges.push(`<span class="badge badge-blue">${item.category}</span>`);
+  document.getElementById('confirm-badges').innerHTML = badges.join('');
+}
+
+function backToSearch() {
+  selectedItem = null;
+  document.getElementById('sale-step-1').style.display = 'block';
+  document.getElementById('sale-step-2').style.display = 'none';
+  document.getElementById('sale-back-btn').style.display = 'none';
+  document.getElementById('sale-confirm-btn').style.display = 'none';
+}
+
+async function confirmSale() {
+  if (!selectedItem) return;
+  const btn = document.getElementById('sale-confirm-btn');
+  btn.textContent = 'Processing...';
+  btn.disabled = true;
+  try {
+    const result = await API.post('/sales', {
+      inventory_id:  selectedItem.id,
+      quantity:      parseInt(document.getElementById('sale-qty').value) || 1,
+      channel:       document.getElementById('sale-channel').value,
+      customer_name: document.getElementById('sale-customer').value || 'Walk-in',
+      sale_price:    parseFloat(document.getElementById('sale-price').value) || null,
+    });
+    showToast(`Sale recorded — ${result.item.name} sold!`);
+    closeSaleModal();
+    loadOrders();
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.textContent = 'Confirm Sale';
+    btn.disabled = false;
+  }
+}
 
 (async () => {
   await initPage('Orders');
