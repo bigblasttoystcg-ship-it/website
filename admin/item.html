@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Item — BigBlastToys Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<script src="admin.js"></script>
+<div class="admin-layout">
+  <div id="sidebar-mount"></div>
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <button class="btn btn-ghost btn-sm" onclick="history.back()">← Back</button>
+      <div class="item-breadcrumb" id="item-breadcrumb" style="color:var(--muted);font-size:0.82rem">Inventory</div>
+      <div style="flex:1"></div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--blue);letter-spacing:0.04em" id="item-header-price"></div>
+      <button class="btn btn-ghost btn-sm" id="sync-btn" onclick="syncPrice()">↻ Sync Price</button>
+      <button class="btn btn-ghost btn-sm" onclick="duplicateAndRedirect()">⧉ Duplicate</button>
+      <button class="btn btn-danger btn-sm" onclick="deleteItem()">Delete</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save Changes</button>
+    </div>
+
+    <div class="content" style="padding:24px;overflow-y:auto">
+
+      <!-- Card Title Row -->
+      <div style="margin-bottom:22px">
+        <h1 style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.04em;line-height:1" id="item-title">Loading...</h1>
+        <div style="color:var(--muted);font-size:0.85rem;margin-top:4px" id="item-subtitle"></div>
+      </div>
+
+      <!-- 3-Column Body -->
+      <div class="item-body">
+
+        <!-- Left: Image -->
+        <div class="item-image-col">
+          <div class="item-img-wrap" id="item-img-wrap">
+            <div class="item-img-placeholder">No Image</div>
+          </div>
+          <div class="form-group" style="margin-top:12px">
+            <label>Image URL</label>
+            <input type="url" id="f-img" placeholder="https://..." oninput="updateItemImg(this.value)">
+          </div>
+          <div id="item-grade-display" style="display:none;margin-top:10px;text-align:center">
+            <span class="badge badge-purple" style="font-size:0.85rem;padding:6px 14px" id="item-grade-badge"></span>
+          </div>
+        </div>
+
+        <!-- Center: Price History -->
+        <div class="item-chart-col">
+          <div class="panel">
+            <div class="panel-header">
+              <span class="panel-title">Price History</span>
+              <div style="display:flex;gap:4px">
+                <button class="btn btn-ghost btn-sm chart-range-btn active" data-range="all" onclick="setRange('all')">ALL</button>
+                <button class="btn btn-ghost btn-sm chart-range-btn" data-range="3m"  onclick="setRange('3m')">3M</button>
+                <button class="btn btn-ghost btn-sm chart-range-btn" data-range="1m"  onclick="setRange('1m')">1M</button>
+                <button class="btn btn-ghost btn-sm chart-range-btn" data-range="1w"  onclick="setRange('1w')">1W</button>
+              </div>
+            </div>
+            <div class="panel-body" style="position:relative;min-height:220px;display:flex;align-items:center;justify-content:center">
+              <canvas id="price-chart" style="width:100%;display:none"></canvas>
+              <div id="chart-empty" style="color:var(--muted);font-size:0.85rem;text-align:center;line-height:1.6">
+                No price history yet.<br>Sync prices to start tracking.
+              </div>
+            </div>
+          </div>
+
+          <!-- Stock quick-edit -->
+          <div class="panel" style="margin-top:14px">
+            <div class="panel-header"><span class="panel-title">Stock</span></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+              <div class="form-row">
+                <div class="form-group"><label>Online Stock</label><input type="number" id="f-online" min="0"></div>
+                <div class="form-group"><label>In-Store Stock</label><input type="number" id="f-instore" min="0"></div>
+              </div>
+              <div class="form-row">
+                <div class="form-group"><label>Price ($)</label><input type="number" id="f-price" step="0.01" min="0" oninput="document.getElementById('item-header-price').textContent='$'+(parseFloat(this.value)||0).toFixed(2)"></div>
+                <div class="form-group"><label>Low Stock Alert</label><input type="number" id="f-threshold" min="0"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Edit Form -->
+        <div class="item-edit-col">
+          <input type="hidden" id="item-id">
+
+          <div class="panel">
+            <div class="panel-header"><span class="panel-title">Details</span></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+              <div class="form-group"><label>Name *</label><input type="text" id="f-name" oninput="document.getElementById('item-title').textContent=this.value||'—'"></div>
+              <div class="form-group"><label>Set Name</label><input type="text" id="f-set"></div>
+              <div class="form-group"><label>Variant</label><input type="text" id="f-variant"></div>
+              <div class="form-row">
+                <div class="form-group"><label>Category</label>
+                  <select id="f-category">
+                    <option value="singles">Singles</option>
+                    <option value="sealed">Sealed</option>
+                    <option value="graded">Graded</option>
+                  </select>
+                </div>
+                <div class="form-group"><label>Condition</label>
+                  <select id="f-condition">
+                    <option value="NM">NM</option><option value="LP">LP</option>
+                    <option value="MP">MP</option><option value="HP">HP</option>
+                    <option value="DMG">DMG</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top:12px">
+            <div class="panel-header"><span class="panel-title">Graded Card</span></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
+              <div class="form-row">
+                <div class="form-group"><label>Grading Co.</label>
+                  <select id="f-grade-company" onchange="updateGradeBadge()">
+                    <option value="">Ungraded</option>
+                    <option value="PSA">PSA</option><option value="BGS">BGS</option>
+                    <option value="CGC">CGC</option><option value="TAG">TAG</option>
+                  </select>
+                </div>
+                <div class="form-group"><label>Grade</label>
+                  <select id="f-grade-num" onchange="updateGradeBadge()">
+                    <option value="">—</option>
+                    <option value="1">1</option><option value="1.5">1.5</option>
+                    <option value="2">2</option><option value="2.5">2.5</option>
+                    <option value="3">3</option><option value="3.5">3.5</option>
+                    <option value="4">4</option><option value="4.5">4.5</option>
+                    <option value="5">5</option><option value="5.5">5.5</option>
+                    <option value="6">6</option><option value="6.5">6.5</option>
+                    <option value="7">7</option><option value="7.5">7.5</option>
+                    <option value="8">8</option><option value="8.5">8.5</option>
+                    <option value="9">9</option><option value="9.5">9.5</option>
+                    <option value="10">10</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-top:12px">
+            <div class="panel-header"><span class="panel-title">Sale Channel</span></div>
+            <div class="panel-body">
+              <div class="form-group">
+                <select id="f-channel">
+                  <option value="both">Online &amp; In-Person</option>
+                  <option value="online">Online Only</option>
+                  <option value="instore">In-Person Only</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+let itemData = null;
+let priceChart = null;
+let allHistory = [];
+
+const itemId = new URLSearchParams(location.search).get('id');
+if (!itemId) location.href = '/admin/inventory.html';
+
+function updateItemImg(url) {
+  const wrap = document.getElementById('item-img-wrap');
+  if (url) {
+    wrap.innerHTML = `<img src="${url}" alt="Card" class="item-card-img" onerror="this.parentElement.innerHTML='<div class=item-img-placeholder>No Image</div>'">`;
+  } else {
+    wrap.innerHTML = '<div class="item-img-placeholder">No Image</div>';
+  }
+}
+
+function updateGradeBadge() {
+  const co  = document.getElementById('f-grade-company').value;
+  const num = document.getElementById('f-grade-num').value;
+  const display = document.getElementById('item-grade-display');
+  const badge   = document.getElementById('item-grade-badge');
+  if (co && num) {
+    badge.textContent = `${co} ${num}`;
+    display.style.display = 'block';
+  } else {
+    display.style.display = 'none';
+  }
+}
+
+function populateForm(item) {
+  itemData = item;
+  document.getElementById('item-id').value        = item.id;
+  document.getElementById('item-title').textContent = item.name;
+  document.getElementById('item-subtitle').textContent = [item.set_name, item.variant].filter(Boolean).join(' · ');
+  document.getElementById('item-breadcrumb').textContent = `Inventory › ${item.category} › ${item.name}`;
+  document.getElementById('item-header-price').textContent = fmt(item.price);
+  document.getElementById('f-name').value          = item.name || '';
+  document.getElementById('f-set').value           = item.set_name || '';
+  document.getElementById('f-variant').value       = item.variant || '';
+  document.getElementById('f-category').value      = item.category || 'singles';
+  document.getElementById('f-condition').value     = item.condition || 'NM';
+  document.getElementById('f-price').value         = item.price || '';
+  document.getElementById('f-online').value        = item.online_stock ?? 0;
+  document.getElementById('f-instore').value       = item.instore_stock ?? 0;
+  document.getElementById('f-threshold').value     = item.low_stock_threshold ?? 3;
+  const gradeParts = item.grade ? item.grade.split(' ') : [];
+  document.getElementById('f-grade-company').value = gradeParts[0] || '';
+  document.getElementById('f-grade-num').value     = gradeParts[1] || '';
+  document.getElementById('f-channel').value       = item.sale_channel || 'both';
+  document.getElementById('f-img').value           = item.img_url || '';
+  updateItemImg(item.img_url);
+  updateGradeBadge();
+  document.title = `${item.name} — BigBlastToys Admin`;
+}
+
+function buildChart(history) {
+  const ctx   = document.getElementById('price-chart');
+  const empty = document.getElementById('chart-empty');
+  if (!history.length) {
+    ctx.style.display   = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  ctx.style.display   = 'block';
+  empty.style.display = 'none';
+  if (priceChart) priceChart.destroy();
+  priceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: history.map(h => new Date(h.recorded_at).toLocaleDateString()),
+      datasets: [{
+        label: 'Price',
+        data: history.map(h => parseFloat(h.price)),
+        borderColor: '#00aaff',
+        backgroundColor: 'rgba(0,170,255,0.08)',
+        tension: 0.35,
+        pointRadius: history.length > 30 ? 0 : 4,
+        pointBackgroundColor: '#00aaff',
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => `$${c.parsed.y.toFixed(2)}` } }
+      },
+      scales: {
+        x: { ticks: { color: '#6b7a99', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#6b7a99', callback: v => `$${v}` }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+function setRange(range) {
+  document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.toggle('active', b.dataset.range === range));
+  const now = new Date();
+  const cutoff = { '1w': 7, '1m': 30, '3m': 90 }[range];
+  const filtered = cutoff
+    ? allHistory.filter(h => new Date(h.recorded_at) >= new Date(now - cutoff * 864e5))
+    : allHistory;
+  buildChart(filtered);
+}
+
+async function saveItem() {
+  const body = {
+    name:                document.getElementById('f-name').value,
+    set_name:            document.getElementById('f-set').value,
+    variant:             document.getElementById('f-variant').value,
+    category:            document.getElementById('f-category').value,
+    condition:           document.getElementById('f-condition').value,
+    price:               parseFloat(document.getElementById('f-price').value) || 0,
+    online_stock:        parseInt(document.getElementById('f-online').value)   || 0,
+    instore_stock:       parseInt(document.getElementById('f-instore').value)  || 0,
+    low_stock_threshold: parseInt(document.getElementById('f-threshold').value)|| 3,
+    sale_channel:        document.getElementById('f-channel').value || 'both',
+    grade: (() => {
+      const co  = document.getElementById('f-grade-company').value;
+      const num = document.getElementById('f-grade-num').value;
+      return co && num ? `${co} ${num}` : null;
+    })(),
+    img_url: document.getElementById('f-img').value,
+  };
+  try {
+    const updated = await API.put(`/inventory/${itemId}`, body);
+    populateForm(updated);
+    showToast('Changes saved');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function deleteItem() {
+  if (!confirm(`Delete "${itemData?.name}"? This cannot be undone.`)) return;
+  try {
+    await API.delete(`/inventory/${itemId}`);
+    showToast('Item deleted');
+    setTimeout(() => location.href = '/admin/inventory.html', 800);
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+function duplicateAndRedirect() {
+  sessionStorage.setItem('dup', JSON.stringify({ ...itemData, id: null, online_stock: 0, instore_stock: 0 }));
+  location.href = '/admin/inventory.html?dup=1';
+}
+
+async function syncPrice() {
+  const btn = document.getElementById('sync-btn');
+  btn.textContent = '↻ Syncing...';
+  btn.disabled = true;
+  try {
+    const result = await API.post(`/pricesync/single/${itemId}`, {});
+    showToast(`Price updated: ${fmt(result.old_price)} → ${fmt(result.new_price)}`);
+    const [item, history] = await Promise.all([
+      API.get(`/inventory/${itemId}`),
+      API.get(`/inventory/${itemId}/history`).catch(() => [])
+    ]);
+    populateForm(item);
+    allHistory = history;
+    setRange(document.querySelector('.chart-range-btn.active')?.dataset.range || 'all');
+  } catch (e) {
+    showToast(e.message, 'error');
+  } finally {
+    btn.textContent = '↻ Sync Price';
+    btn.disabled = false;
+  }
+}
+
+(async () => {
+  await initPage('Inventory');
+  const [item, history] = await Promise.all([
+    API.get(`/inventory/${itemId}`).catch(() => null),
+    API.get(`/inventory/${itemId}/history`).catch(() => [])
+  ]);
+  if (!item) { showToast('Item not found', 'error'); return; }
+  populateForm(item);
+  allHistory = history;
+  buildChart(history);
+})();
+</script>
+</body>
+</html>

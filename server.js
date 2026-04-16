@@ -37,6 +37,12 @@ app.use('/api/pricesync', require('./api/pricesync'));
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS grade TEXT;
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS variant TEXT;
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS sale_channel TEXT DEFAULT 'both';
+      CREATE TABLE IF NOT EXISTS price_history (
+        id SERIAL PRIMARY KEY,
+        inventory_id TEXT NOT NULL,
+        price NUMERIC(10,2) NOT NULL,
+        recorded_at TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
     console.log('DB migration OK');
   } catch (err) {

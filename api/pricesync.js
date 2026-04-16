@@ -116,6 +116,10 @@ router.post('/run', requireAuth, requireAdmin, async (req, res) => {
         'UPDATE inventory SET price = $1, img_url = COALESCE($2, img_url), updated_at = NOW() WHERE id = $3',
         [newPrice, imgUrl, item.id]
       );
+      await req.db.query(
+        'INSERT INTO price_history (inventory_id, price) VALUES ($1, $2)',
+        [item.id, newPrice]
+      );
 
       results.push({ name: item.name, set_name: item.set_name, old_price: oldPrice, new_price: newPrice, img_url: imgUrl });
       updated++;
@@ -158,6 +162,10 @@ router.post('/single/:id', requireAuth, async (req, res) => {
     await req.db.query(
       'UPDATE inventory SET price = $1, img_url = COALESCE($2, img_url), updated_at = NOW() WHERE id = $3',
       [newPrice, imgUrl, item.id]
+    );
+    await req.db.query(
+      'INSERT INTO price_history (inventory_id, price) VALUES ($1, $2)',
+      [item.id, newPrice]
     );
 
     res.json({ success: true, name: item.name, old_price: item.price, new_price: newPrice, img_url: imgUrl });

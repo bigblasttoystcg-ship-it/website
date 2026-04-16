@@ -23,6 +23,19 @@ router.get('/', requireAuth, async (req, res) => {
   }
 });
 
+// GET /api/inventory/:id/history
+router.get('/:id/history', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await req.db.query(
+      'SELECT price, recorded_at FROM price_history WHERE inventory_id = $1 ORDER BY recorded_at ASC',
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/inventory/:id
 router.get('/:id', requireAuth, async (req, res) => {
   try {

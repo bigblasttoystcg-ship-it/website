@@ -205,7 +205,7 @@ async function loadInventory() {
   const iData = i => JSON.stringify(i).replace(/"/g, '&quot;');
 
   document.getElementById('inv-grid').innerHTML = inv.length ? inv.map(i => `
-    <div class="inv-card" onclick="editItem(${iData(i)})">
+    <div class="inv-card" onclick="location.href='/admin/item.html?id=${i.id}'">
       <div class="inv-card-img-wrap">
         ${i.img_url
           ? `<img src="${i.img_url}" alt="${i.name}" class="inv-card-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
@@ -397,6 +397,15 @@ async function importCSV(input) {
 (async () => {
   currentUser = await initPage('Inventory');
   loadInventory();
+  // Handle duplicate redirect from item detail page
+  if (new URLSearchParams(location.search).get('dup') === '1') {
+    const dup = sessionStorage.getItem('dup');
+    if (dup) {
+      sessionStorage.removeItem('dup');
+      openModal(JSON.parse(dup));
+      document.getElementById('modal-title').textContent = 'Duplicate Item';
+    }
+  }
 })();
 </script>
 </body>
