@@ -227,6 +227,13 @@ async function loadGraded() {
           <span class="badge badge-gold">graded</span>
           <span class="badge ${condCls}">${c.condition}</span>
         </div>
+        ${grade ? (() => {
+          const [co, num] = grade.split(' ');
+          return `<div style="display:flex;gap:6px;align-items:center;margin-top:2px">
+            <span class="badge badge-purple" style="font-size:0.72rem">${co}</span>
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:#a78bfa;letter-spacing:0.04em">${num}</span>
+          </div>`;
+        })() : ''}
         <div class="inv-card-price">${fmt(c.price)}</div>
         <div class="inv-card-stock" onclick="event.stopPropagation()">
           <div class="inv-stock-row">
