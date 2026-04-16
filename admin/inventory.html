@@ -14,56 +14,80 @@
   <div class="main">
     <div class="topbar">
       <div class="page-title" id="page-title">Inventory</div>
+      <input type="text" id="search" placeholder="Search cards or sets..." oninput="loadInventory()" class="topbar-search-input">
       <button class="btn btn-ghost" id="sync-btn" onclick="syncPrices()">↻ Sync Prices</button>
       <button class="btn btn-ghost" onclick="document.getElementById('import-input').click()">⬆ Import CSV</button>
       <input type="file" id="import-input" accept=".csv" style="display:none" onchange="importCSV(this)">
       <button class="btn btn-primary" onclick="openModal()">+ Add Item</button>
     </div>
-    <div class="content">
-      <div class="filters">
-        <input type="text" id="search" placeholder="Search cards or sets..." oninput="loadInventory()" style="flex:1;min-width:200px">
-        <select id="filter-category" onchange="loadInventory()">
-          <option value="">All Categories</option>
-          <option value="singles">Singles</option>
-          <option value="sealed">Sealed</option>
-          <option value="graded">Graded</option>
-        </select>
-        <select id="filter-condition" onchange="loadInventory()">
-          <option value="">All Conditions</option>
-          <option value="NM">NM</option>
-          <option value="LP">LP</option>
-          <option value="MP">MP</option>
-          <option value="HP">HP</option>
-          <option value="DMG">DMG</option>
-        </select>
-        <select id="filter-stock" onchange="loadInventory()">
-          <option value="">All Stock</option>
-          <option value="low">Low Stock</option>
-          <option value="out">Out Online</option>
-        </select>
-        <select id="filter-channel" onchange="loadInventory()">
-          <option value="">All Channels</option>
-          <option value="online">Online</option>
-          <option value="instore">In-Person</option>
-        </select>
-        <select id="sort-by" onchange="loadInventory()">
-          <option value="updated">Recently Updated</option>
-          <option value="price-high">Price: High to Low</option>
-          <option value="price-low">Price: Low to High</option>
-          <option value="name-az">Name: A → Z</option>
-          <option value="name-za">Name: Z → A</option>
-          <option value="stock-high">Stock: Most First</option>
-          <option value="stock-low">Stock: Least First</option>
-        </select>
+
+    <div class="inv-layout">
+
+      <!-- Filter Sidebar -->
+      <div class="inv-filter-sidebar">
+
+        <div class="inv-filter-section">
+          <div class="inv-filter-label">Product Type</div>
+          <div class="inv-filter-options">
+            <label class="inv-filter-radio"><input type="radio" name="category" value="" onchange="loadInventory()" checked> All Types</label>
+            <label class="inv-filter-radio"><input type="radio" name="category" value="singles" onchange="loadInventory()"> Raw Cards</label>
+            <label class="inv-filter-radio"><input type="radio" name="category" value="sealed" onchange="loadInventory()"> Sealed Products</label>
+            <label class="inv-filter-radio"><input type="radio" name="category" value="graded" onchange="loadInventory()"> Graded Cards</label>
+          </div>
+        </div>
+
+        <div class="inv-filter-section">
+          <div class="inv-filter-label">Condition</div>
+          <div class="inv-filter-options">
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="" onchange="loadInventory()" checked> All</label>
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="NM" onchange="loadInventory()"> NM</label>
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="LP" onchange="loadInventory()"> LP</label>
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="MP" onchange="loadInventory()"> MP</label>
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="HP" onchange="loadInventory()"> HP</label>
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="DMG" onchange="loadInventory()"> DMG</label>
+          </div>
+        </div>
+
+        <div class="inv-filter-section">
+          <div class="inv-filter-label">Sale Channel</div>
+          <div class="inv-filter-options">
+            <label class="inv-filter-radio"><input type="radio" name="channel" value="" onchange="loadInventory()" checked> All Channels</label>
+            <label class="inv-filter-radio"><input type="radio" name="channel" value="online" onchange="loadInventory()"> Online</label>
+            <label class="inv-filter-radio"><input type="radio" name="channel" value="instore" onchange="loadInventory()"> In-Person</label>
+          </div>
+        </div>
+
+        <div class="inv-filter-section">
+          <div class="inv-filter-label">Stock Status</div>
+          <div class="inv-filter-options">
+            <label class="inv-filter-radio"><input type="radio" name="stock" value="" onchange="loadInventory()" checked> All</label>
+            <label class="inv-filter-radio"><input type="radio" name="stock" value="low" onchange="loadInventory()"> Low Stock</label>
+            <label class="inv-filter-radio"><input type="radio" name="stock" value="out" onchange="loadInventory()"> Out Online</label>
+          </div>
+        </div>
+
+        <div class="inv-filter-section">
+          <div class="inv-filter-label">Sort By</div>
+          <select id="sort-by" onchange="loadInventory()">
+            <option value="updated">Recently Updated</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="name-az">Name: A → Z</option>
+            <option value="name-za">Name: Z → A</option>
+            <option value="stock-high">Stock: Most First</option>
+            <option value="stock-low">Stock: Least First</option>
+          </select>
+        </div>
+
       </div>
-      <div class="panel">
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th></th><th>Card / Product</th><th>Category</th><th>Condition</th><th>Grade</th><th>Price</th><th>Online Stock</th><th>In-Store Stock</th><th>Status</th><th style="text-align:right"></th></tr></thead>
-            <tbody id="inv-table"><tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
-          </table>
+
+      <!-- Card Grid -->
+      <div class="inv-grid-wrap">
+        <div class="inv-grid" id="inv-grid">
+          <div style="color:var(--muted);padding:48px;text-align:center">Loading...</div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -78,7 +102,6 @@
     <div class="modal-body">
       <input type="hidden" id="edit-id">
 
-      <!-- Card image preview (only shown when an image exists) -->
       <div id="modal-img-wrap" style="display:none;text-align:center;margin-bottom:16px">
         <img id="modal-img" src="" alt="Card image"
           style="max-height:200px;max-width:100%;border-radius:8px;object-fit:contain;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
@@ -118,24 +141,15 @@
         <div class="form-group"><label>Grade</label>
           <select id="f-grade-num">
             <option value="">—</option>
-            <option value="1">1</option>
-            <option value="1.5">1.5</option>
-            <option value="2">2</option>
-            <option value="2.5">2.5</option>
-            <option value="3">3</option>
-            <option value="3.5">3.5</option>
-            <option value="4">4</option>
-            <option value="4.5">4.5</option>
-            <option value="5">5</option>
-            <option value="5.5">5.5</option>
-            <option value="6">6</option>
-            <option value="6.5">6.5</option>
-            <option value="7">7</option>
-            <option value="7.5">7.5</option>
-            <option value="8">8</option>
-            <option value="8.5">8.5</option>
-            <option value="9">9</option>
-            <option value="9.5">9.5</option>
+            <option value="1">1</option><option value="1.5">1.5</option>
+            <option value="2">2</option><option value="2.5">2.5</option>
+            <option value="3">3</option><option value="3.5">3.5</option>
+            <option value="4">4</option><option value="4.5">4.5</option>
+            <option value="5">5</option><option value="5.5">5.5</option>
+            <option value="6">6</option><option value="6.5">6.5</option>
+            <option value="7">7</option><option value="7.5">7.5</option>
+            <option value="8">8</option><option value="8.5">8.5</option>
+            <option value="9">9</option><option value="9.5">9.5</option>
             <option value="10">10</option>
           </select>
         </div>
@@ -160,17 +174,21 @@
 <script>
 let currentUser;
 
+function getFilter(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : '';
+}
+
 async function loadInventory() {
-  const search   = document.getElementById('search').value;
-  const category = document.getElementById('filter-category').value;
-  const condition= document.getElementById('filter-condition').value;
-  const stock    = document.getElementById('filter-stock').value;
-  const channel  = document.getElementById('filter-channel').value;
-  const sortBy   = document.getElementById('sort-by').value;
-  const params   = new URLSearchParams({ search, category, condition, stock, channel });
+  const search    = document.getElementById('search').value;
+  const category  = getFilter('category');
+  const condition = getFilter('condition');
+  const stock     = getFilter('stock');
+  const channel   = getFilter('channel');
+  const sortBy    = document.getElementById('sort-by').value;
+  const params    = new URLSearchParams({ search, category, condition, stock, channel });
   let inv = await API.get('/inventory?' + params).catch(() => []);
 
-  // Client-side sort
   inv.sort((a, b) => {
     switch (sortBy) {
       case 'price-high':  return b.price - a.price;
@@ -179,39 +197,55 @@ async function loadInventory() {
       case 'name-za':     return b.name.localeCompare(a.name);
       case 'stock-high':  return (b.online_stock + b.instore_stock) - (a.online_stock + a.instore_stock);
       case 'stock-low':   return (a.online_stock + a.instore_stock) - (b.online_stock + b.instore_stock);
-      default:            return 0; // updated — already sorted by API
+      default:            return 0;
     }
   });
-  const isAdmin = currentUser?.role === 'admin';
 
+  const isAdmin = currentUser?.role === 'admin';
   const iData = i => JSON.stringify(i).replace(/"/g, '&quot;');
-  document.getElementById('inv-table').innerHTML = inv.length ? inv.map(i => `
-    <tr style="cursor:pointer" onclick="editItem(${iData(i)})">
-      <td style="width:48px" onclick="event.stopPropagation()">
+
+  document.getElementById('inv-grid').innerHTML = inv.length ? inv.map(i => `
+    <div class="inv-card" onclick="editItem(${iData(i)})">
+      <div class="inv-card-img-wrap">
         ${i.img_url
-          ? `<img src="${i.img_url}" alt="${i.name}" style="width:44px;height:auto;border-radius:4px;display:block;object-fit:contain">`
-          : `<div style="width:44px;height:60px;background:var(--navy3);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.65rem">No img</div>`}
-      </td>
-      <td><div class="td-name">${i.name}</div><div class="td-sub">${i.set_name || ''} ${i.variant ? '· ' + i.variant : ''}</div></td>
-      <td><span class="badge badge-blue">${i.category}</span></td>
-      <td><span class="badge badge-gray">${i.condition}</span></td>
-      <td>${i.grade ? `<span class="badge badge-purple" title="${i.grade}">${i.grade.split(' ').slice(0,2).join(' ')}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
-      <td>${fmt(i.price)}</td>
-      <td onclick="event.stopPropagation()"><input class="stock-input" type="number" value="${i.online_stock}" min="0" onchange="updateStock('${i.id}', this, 'online')" title="Online stock"></td>
-      <td onclick="event.stopPropagation()"><input class="stock-input" type="number" value="${i.instore_stock}" min="0" onchange="updateStock('${i.id}', this, 'instore')" title="In-store stock"></td>
-      <td>
-        ${stockBadge(i.online_stock, i.instore_stock, i.low_stock_threshold)}
-        ${i.sale_channel === 'online' ? '<span class="badge badge-blue" title="Online only">Online</span>' : i.sale_channel === 'instore' ? '<span class="badge badge-gray" title="In-person only">In-Person</span>' : ''}
-      </td>
-      <td onclick="event.stopPropagation()">
-        <div style="display:flex;gap:4px;justify-content:flex-end;align-items:center;white-space:nowrap">
-          ${i.category === 'singles' ? `<button class="btn btn-ghost btn-sm" onclick="syncSinglePrice('${i.id}','${i.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="Sync market price">↻</button>` : ''}
-          <button class="btn btn-ghost btn-sm" onclick="duplicateItem(${iData(i)});event.stopPropagation()" title="Duplicate card">⧉</button>
-          ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}','${i.name}');event.stopPropagation()">Del</button>` : ''}
+          ? `<img src="${i.img_url}" alt="${i.name}" class="inv-card-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : ''}
+        <div class="inv-card-img-placeholder" style="${i.img_url ? 'display:none' : ''}">
+          <span>No Image</span>
         </div>
-      </td>
-    </tr>`).join('') :
-    '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:32px">No items found</td></tr>';
+        ${i.grade ? `<div class="inv-grade-badge">${i.grade}</div>` : ''}
+        ${i.sale_channel === 'online'  ? `<div class="inv-channel-badge ch-online">Online</div>`    : ''}
+        ${i.sale_channel === 'instore' ? `<div class="inv-channel-badge ch-instore">In-Person</div>` : ''}
+      </div>
+      <div class="inv-card-body">
+        <div class="inv-card-name">${i.name}</div>
+        <div class="inv-card-sub">${[i.set_name, i.variant].filter(Boolean).join(' · ')}</div>
+        <div class="inv-card-badges">
+          <span class="badge badge-blue">${i.category}</span>
+          <span class="badge badge-gray">${i.condition}</span>
+        </div>
+        <div class="inv-card-price">${fmt(i.price)}</div>
+        <div class="inv-card-stock" onclick="event.stopPropagation()">
+          <div class="inv-stock-row">
+            <span class="inv-stock-label">Online</span>
+            <input class="stock-input" type="number" value="${i.online_stock}" min="0" onchange="updateStock('${i.id}', this, 'online')" title="Online stock">
+          </div>
+          <div class="inv-stock-row">
+            <span class="inv-stock-label">In-Store</span>
+            <input class="stock-input" type="number" value="${i.instore_stock}" min="0" onchange="updateStock('${i.id}', this, 'instore')" title="In-store stock">
+          </div>
+        </div>
+        <div class="inv-card-footer" onclick="event.stopPropagation()">
+          ${stockBadge(i.online_stock, i.instore_stock, i.low_stock_threshold)}
+          <div class="inv-card-actions">
+            ${i.category === 'singles' ? `<button class="btn btn-ghost btn-sm" onclick="syncSinglePrice('${i.id}','${i.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="Sync market price">↻</button>` : ''}
+            <button class="btn btn-ghost btn-sm" onclick="duplicateItem(${iData(i)});event.stopPropagation()" title="Duplicate card">⧉</button>
+            ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}','${i.name}');event.stopPropagation()">Del</button>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`).join('') :
+    '<div style="color:var(--muted);padding:48px;text-align:center;width:100%">No items found</div>';
 }
 
 async function updateStock(id, input, field) {
@@ -264,7 +298,6 @@ function updateImgPreview(url) {
 function editItem(item) { openModal(item); }
 
 function duplicateItem(item) {
-  // Open modal pre-filled but as a new item (no id), with stock reset to 0
   openModal({ ...item, id: null, online_stock: 0, instore_stock: 0 });
   document.getElementById('modal-title').textContent = 'Duplicate Item';
 }
@@ -282,8 +315,8 @@ async function saveItem() {
     instore_stock: parseInt(document.getElementById('f-instore').value) || 0,
     low_stock_threshold: parseInt(document.getElementById('f-threshold').value) || 3,
     sale_channel: document.getElementById('f-channel').value || 'both',
-    grade:   (() => {
-      const co = document.getElementById('f-grade-company').value;
+    grade: (() => {
+      const co  = document.getElementById('f-grade-company').value;
       const num = document.getElementById('f-grade-num').value;
       return co && num ? `${co} ${num}` : null;
     })(),
@@ -291,7 +324,7 @@ async function saveItem() {
   };
   try {
     if (id) { await API.put(`/inventory/${id}`, body); showToast('Item updated'); }
-    else { await API.post('/inventory', body); showToast('Item added'); }
+    else     { await API.post('/inventory', body);      showToast('Item added');   }
     closeModal();
     loadInventory();
   } catch (e) { showToast(e.message, 'error'); }
@@ -337,7 +370,7 @@ async function syncSinglePrice(id, name) {
 async function importCSV(input) {
   const file = input.files[0];
   if (!file) return;
-  const btn = document.querySelector('.btn-ghost');
+  const btn = document.getElementById('import-input').previousElementSibling;
   btn.textContent = 'Importing...';
   btn.disabled = true;
   const formData = new FormData();
