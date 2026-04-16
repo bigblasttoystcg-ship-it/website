@@ -146,3 +146,65 @@ function stockBadge(online, instore, threshold = 3) {
 function fmt(n) {
   return '$' + parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
+
+// ── Card image picker ─────────────────────────────────────
+let _pickerTimer  = null;
+let _pickerSelect = null;
+
+function initCardPicker(nameId, setId, onSelect) {
+  _pickerSelect = onSelect;
+  const nameEl = document.getElementById(nameId);
+  const setEl  = document.getElementById(setId);
+  const trigger = () => {
+    clearTimeout(_pickerTimer);
+    const name = nameEl?.value?.trim();
+    if (!name || name.length < 2) { _renderPicker([], false); return; }
+    _renderPicker([], true); // show loading state
+    _pickerTimer = setTimeout(() => _searchCards(name, setEl?.value?.trim() || ''), 500);
+  };
+  nameEl?.addEventListener('input', trigger);
+  setEl?.addEventListener('input',  trigger);
+}
+
+async function _searchCards(name, set) {
+  try {
+    const params = new URLSearchParams({ name, set });
+    const results = await API.get('/pricesync/search?' + params);
+    _renderPicker(results, false);
+  } catch { _renderPicker([], false); }
+}
+
+function _renderPicker(cards, loading) {
+  const el = document.getElementById('card-picker');
+  if (!el) return;
+  if (loading) {
+    el.innerHTML = '<div class="card-picker-status">Searching...</div>';
+    return;
+  }
+  if (!cards.length) {
+    el.innerHTML = el.dataset.searched ? '<div class="card-picker-status">No matches found</div>' : '';
+    return;
+  }
+  el.dataset.searched = '1';
+  el.innerHTML = cards.map((c, i) => `
+    <div class="card-pick" onclick="_selectCard(this)" data-card='${JSON.stringify(c).replace(/'/g,"&#39;")}'>
+      <img src="${c.img_url}" alt="${c.name}" onerror="this.parentElement.style.display='none'">
+      <div class="card-pick-name">${c.name}</div>
+      <div class="card-pick-set">${c.set}</div>
+    </div>`).join('');
+}
+
+function _selectCard(el) {
+  document.querySelectorAll('.card-pick').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  try {
+    const card = JSON.parse(el.dataset.card);
+    if (_pickerSelect) _pickerSelect(card);
+  } catch {}
+}
+
+function resetCardPicker() {
+  clearTimeout(_pickerTimer);
+  const el = document.getElementById('card-picker');
+  if (el) { el.innerHTML = ''; delete el.dataset.searched; }
+}

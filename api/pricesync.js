@@ -66,6 +66,29 @@ function extractMarketPrice(tcgplayer) {
   return null;
 }
 
+// GET /api/pricesync/search — search cards by name for the image picker
+router.get('/search', requireAuth, async (req, res) => {
+  const { name, set } = req.query;
+  if (!name || name.length < 2) return res.json([]);
+  try {
+    const namePart = `name:"${name.replace(/"/g, '')}"`;
+    const setPart  = set ? ` set.name:${set.replace(/"/g, '')}` : '';
+    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=12&select=name,set,tcgplayer,images`;
+    const data = await fetchPokemonTCG(url);
+    const cards = (data?.data || [])
+      .map(c => ({
+        name:         c.name,
+        set:          c.set?.name || '',
+        img_url:      c.images?.large || c.images?.small || null,
+        market_price: extractMarketPrice(c.tcgplayer) || null,
+      }))
+      .filter(c => c.img_url);
+    res.json(cards);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/pricesync/preview — show what prices would change (no DB update)
 router.get('/preview', requireAuth, requireAdmin, async (req, res) => {
   const { rows: items } = await req.db.query(

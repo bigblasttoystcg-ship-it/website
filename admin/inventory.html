@@ -111,6 +111,10 @@
         <div class="form-group"><label>Name *</label><input type="text" id="f-name" placeholder="Charizard ex"></div>
         <div class="form-group"><label>Set Name</label><input type="text" id="f-set" placeholder="Obsidian Flames"></div>
       </div>
+      <div class="form-group">
+        <label>Card Match <span style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0">(type a name to search)</span></label>
+        <div id="card-picker"></div>
+      </div>
       <div class="form-row">
         <div class="form-group"><label>Category *</label>
           <select id="f-category"><option value="singles">Singles</option><option value="sealed">Sealed</option><option value="graded">Graded</option></select>
@@ -278,9 +282,18 @@ function openModal(item = null) {
   document.getElementById('f-img').value       = item?.img_url || '';
   updateImgPreview(item?.img_url || '');
   document.getElementById('modal').classList.remove('hidden');
+  initCardPicker('f-name', 'f-set', card => {
+    document.getElementById('f-img').value = card.img_url;
+    updateImgPreview(card.img_url);
+    if (card.market_price && !document.getElementById('f-price').value)
+      document.getElementById('f-price').value = card.market_price.toFixed(2);
+  });
 }
 
-function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+function closeModal() {
+  document.getElementById('modal').classList.add('hidden');
+  resetCardPicker();
+}
 
 function updateImgPreview(url) {
   const wrap = document.getElementById('modal-img-wrap');

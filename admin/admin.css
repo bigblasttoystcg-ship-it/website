@@ -259,6 +259,25 @@ tr:hover td { background: rgba(0,170,255,0.03); cursor: pointer; }
 }
 .inv-card-actions { display: flex; gap: 3px; flex-shrink: 0; }
 
+/* ── Card image picker ── */
+#card-picker {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  max-height: 200px; overflow-y: auto;
+  padding: 4px 0;
+}
+.card-picker-status { color: var(--muted); font-size: 0.78rem; padding: 6px 2px; }
+.card-pick {
+  width: 76px; flex-shrink: 0; cursor: pointer;
+  border-radius: 7px; border: 2px solid transparent;
+  background: var(--navy3); padding: 4px;
+  text-align: center; transition: border-color 0.15s, background 0.15s;
+}
+.card-pick:hover    { border-color: rgba(0,170,255,0.4); }
+.card-pick.selected { border-color: var(--blue); background: rgba(0,170,255,0.1); }
+.card-pick img      { width: 100%; border-radius: 3px; display: block; }
+.card-pick-name { font-size: 0.58rem; font-weight: 600; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-pick-set  { font-size: 0.54rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* ── Item detail page ── */
 .item-body {
   display: grid;
