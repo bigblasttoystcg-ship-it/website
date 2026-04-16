@@ -57,7 +57,12 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
       [name, set_name, variant, category, condition || 'NM', price || 0, online_stock || 0, instore_stock || 0, low_stock_threshold || 3, img_url, grade || null, sale_channel || 'both', price_paid || null]
     );
-    res.status(201).json(rows[0]);
+    const item = rows[0];
+    // Auto-record price history so chart is immediately populated
+    if (item.price && parseFloat(item.price) > 0) {
+      await req.db.query('INSERT INTO price_history (inventory_id, price) VALUES ($1, $2)', [item.id, item.price]);
+    }
+    res.status(201).json(item);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -67,6 +72,8 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 router.put('/:id', requireAuth, async (req, res) => {
   const { name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade, sale_channel, price_paid } = req.body;
   try {
+    // Fetch old price to detect changes
+    const { rows: old } = await req.db.query('SELECT price FROM inventory WHERE id = $1', [req.params.id]);
     const { rows } = await req.db.query(
       `UPDATE inventory SET name=$1, set_name=$2, variant=$3, category=$4, condition=$5,
        price=$6, online_stock=$7, instore_stock=$8, low_stock_threshold=$9, img_url=$10, grade=$11, sale_channel=$12, price_paid=$13
@@ -74,6 +81,12 @@ router.put('/:id', requireAuth, async (req, res) => {
       [name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade || null, sale_channel || 'both', price_paid || null, req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    // Record price history whenever price changes (so chart is always up to date)
+    const newPrice = parseFloat(price) || 0;
+    const oldPrice = old[0] ? parseFloat(old[0].price) : null;
+    if (newPrice > 0 && newPrice !== oldPrice) {
+      await req.db.query('INSERT INTO price_history (inventory_id, price) VALUES ($1, $2)', [req.params.id, newPrice]);
+    }
     res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -20,7 +20,7 @@
       <div class="item-breadcrumb" id="item-breadcrumb" style="color:var(--muted);font-size:0.82rem">Inventory</div>
       <div style="flex:1"></div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--blue);letter-spacing:0.04em" id="item-header-price"></div>
-      <button class="btn btn-ghost btn-sm" id="sync-btn" onclick="syncPrice()">↻ Sync Price</button>
+      <button class="btn btn-ghost btn-sm" id="sync-btn" onclick="syncPrice()" title="Pull latest market price from Pokemon TCG API">↻ Sync Market Price</button>
       <button class="btn btn-ghost btn-sm" onclick="duplicateAndRedirect()">⧉ Duplicate</button>
       <button class="btn btn-danger btn-sm" onclick="deleteItem()">Delete</button>
       <button class="btn btn-primary" onclick="saveItem()">Save Changes</button>
@@ -67,7 +67,7 @@
             <div class="panel-body" style="position:relative;min-height:220px;display:flex;align-items:center;justify-content:center">
               <canvas id="price-chart" style="width:100%;display:none"></canvas>
               <div id="chart-empty" style="color:var(--muted);font-size:0.85rem;text-align:center;line-height:1.6">
-                No price history yet.<br>Sync prices to start tracking.
+                No price history yet.<br>Price changes will appear here automatically.
               </div>
             </div>
           </div>
