@@ -4,7 +4,7 @@ const { requireAuth, requireAdmin } = require('./auth');
 
 // GET /api/inventory
 router.get('/', requireAuth, async (req, res) => {
-  const { search, category, condition, stock } = req.query;
+  const { search, category, condition, stock, channel } = req.query;
   let query = 'SELECT * FROM inventory WHERE 1=1';
   const params = [];
   if (search) { params.push(`%${search}%`); query += ` AND (name ILIKE $${params.length} OR set_name ILIKE $${params.length})`; }
@@ -12,6 +12,8 @@ router.get('/', requireAuth, async (req, res) => {
   if (condition) { params.push(condition); query += ` AND condition = $${params.length}`; }
   if (stock === 'low') query += ` AND (online_stock + instore_stock) <= low_stock_threshold`;
   if (stock === 'out') query += ` AND online_stock = 0`;
+  if (channel === 'online') query += ` AND (sale_channel = 'online' OR sale_channel = 'both' OR sale_channel IS NULL)`;
+  if (channel === 'instore') query += ` AND (sale_channel = 'instore' OR sale_channel = 'both' OR sale_channel IS NULL)`;
   query += ' ORDER BY updated_at DESC';
   try {
     const { rows } = await req.db.query(query, params);
@@ -34,12 +36,12 @@ router.get('/:id', requireAuth, async (req, res) => {
 
 // POST /api/inventory (admin only)
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
-  const { name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade } = req.body;
+  const { name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade, sale_channel } = req.body;
   try {
     const { rows } = await req.db.query(
-      `INSERT INTO inventory (name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
-      [name, set_name, variant, category, condition || 'NM', price || 0, online_stock || 0, instore_stock || 0, low_stock_threshold || 3, img_url, grade || null]
+      `INSERT INTO inventory (name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade, sale_channel)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
+      [name, set_name, variant, category, condition || 'NM', price || 0, online_stock || 0, instore_stock || 0, low_stock_threshold || 3, img_url, grade || null, sale_channel || 'both']
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -49,13 +51,13 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 
 // PUT /api/inventory/:id
 router.put('/:id', requireAuth, async (req, res) => {
-  const { name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade } = req.body;
+  const { name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade, sale_channel } = req.body;
   try {
     const { rows } = await req.db.query(
       `UPDATE inventory SET name=$1, set_name=$2, variant=$3, category=$4, condition=$5,
-       price=$6, online_stock=$7, instore_stock=$8, low_stock_threshold=$9, img_url=$10, grade=$11
-       WHERE id=$12 RETURNING *`,
-      [name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade || null, req.params.id]
+       price=$6, online_stock=$7, instore_stock=$8, low_stock_threshold=$9, img_url=$10, grade=$11, sale_channel=$12
+       WHERE id=$13 RETURNING *`,
+      [name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade || null, sale_channel || 'both', req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(rows[0]);

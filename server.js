@@ -36,6 +36,7 @@ app.use('/api/pricesync', require('./api/pricesync'));
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS img_url TEXT;
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS grade TEXT;
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS variant TEXT;
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS sale_channel TEXT DEFAULT 'both';
     `);
     console.log('DB migration OK');
   } catch (err) {
