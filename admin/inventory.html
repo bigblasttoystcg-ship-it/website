@@ -27,6 +27,12 @@
       <div class="inv-filter-sidebar">
 
         <div class="inv-filter-section">
+          <div class="inv-filter-label">Set</div>
+          <input type="text" id="filter-set" placeholder="Type a set name..." oninput="loadInventory()" class="inv-filter-set-input" autocomplete="off">
+          <datalist id="filter-set-datalist"></datalist>
+        </div>
+
+        <div class="inv-filter-section">
           <div class="inv-filter-label">Product Type</div>
           <div class="inv-filter-options">
             <label class="inv-filter-radio"><input type="radio" name="category" value="" onchange="loadInventory()" checked> All Types</label>
@@ -189,8 +195,9 @@ async function loadInventory() {
   const condition = getFilter('condition');
   const stock     = getFilter('stock');
   const channel   = getFilter('channel');
+  const set_name  = document.getElementById('filter-set').value;
   const sortBy    = document.getElementById('sort-by').value;
-  const params    = new URLSearchParams({ search, category, condition, stock, channel });
+  const params    = new URLSearchParams({ search, category, condition, stock, channel, set_name });
   let inv = await API.get('/inventory?' + params).catch(() => []);
 
   inv.sort((a, b) => {
@@ -411,6 +418,10 @@ async function importCSV(input) {
 (async () => {
   currentUser = await initPage('Inventory');
   loadInventory();
+  // Set autocomplete on sidebar filter
+  initSetAutocomplete('filter-set');
+  // Set autocomplete on modal (called after modal opens, but wire the input here too)
+  initSetAutocomplete('f-set');
   // Handle duplicate redirect from item detail page
   if (new URLSearchParams(location.search).get('dup') === '1') {
     const dup = sessionStorage.getItem('dup');

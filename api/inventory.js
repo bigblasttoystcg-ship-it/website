@@ -4,12 +4,13 @@ const { requireAuth, requireAdmin } = require('./auth');
 
 // GET /api/inventory
 router.get('/', requireAuth, async (req, res) => {
-  const { search, category, condition, stock, channel } = req.query;
+  const { search, category, condition, stock, channel, set_name } = req.query;
   let query = 'SELECT * FROM inventory WHERE 1=1';
   const params = [];
   if (search) { params.push(`%${search}%`); query += ` AND (name ILIKE $${params.length} OR set_name ILIKE $${params.length})`; }
   if (category) { params.push(category); query += ` AND category = $${params.length}`; }
   if (condition) { params.push(condition); query += ` AND condition = $${params.length}`; }
+  if (set_name) { params.push(`%${set_name}%`); query += ` AND set_name ILIKE $${params.length}`; }
   if (stock === 'low') query += ` AND (online_stock + instore_stock) <= low_stock_threshold`;
   if (stock === 'out') query += ` AND online_stock = 0`;
   if (channel === 'online') query += ` AND (sale_channel = 'online' OR sale_channel = 'both' OR sale_channel IS NULL)`;

@@ -147,6 +147,30 @@ function fmt(n) {
   return '$' + parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// ── Set name autocomplete ─────────────────────────────────
+function initSetAutocomplete(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const listId = inputId + '-datalist';
+  let dl = document.getElementById(listId);
+  if (!dl) {
+    dl = document.createElement('datalist');
+    dl.id = listId;
+    input.parentElement.appendChild(dl);
+  }
+  input.setAttribute('list', listId);
+  let timer = null;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { dl.innerHTML = ''; return; }
+    timer = setTimeout(async () => {
+      const sets = await API.get(`/pokemoncards/sets?q=${encodeURIComponent(q)}`).catch(() => []);
+      dl.innerHTML = sets.map(s => `<option value="${s}">`).join('');
+    }, 300);
+  });
+}
+
 // ── Card image picker ─────────────────────────────────────
 let _pickerTimer  = null;
 let _pickerSelect = null;

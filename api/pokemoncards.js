@@ -59,6 +59,28 @@ function rowToCard(r) {
   };
 }
 
+// GET /api/pokemoncards/sets?q= — autocomplete set names
+router.get('/sets', requireAuth, async (req, res) => {
+  const { q } = req.query;
+  if (!q || q.length < 2) return res.json([]);
+  try {
+    // Try local DB first
+    const { rows } = await req.db.query(
+      `SELECT DISTINCT set_name FROM pokemon_cards WHERE set_name ILIKE $1 ORDER BY set_name LIMIT 20`,
+      [`%${q}%`]
+    );
+    if (rows.length) return res.json(rows.map(r => r.set_name).filter(Boolean));
+
+    // Fallback: hit pokemontcg.io sets endpoint
+    const data = await fetchAPI(
+      `https://api.pokemontcg.io/v2/sets?q=${encodeURIComponent('name:' + q + '*')}&pageSize=20&select=name`
+    );
+    res.json((data?.data || []).map(s => s.name));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/pokemoncards/search?name=&set=
 router.get('/search', requireAuth, async (req, res) => {
   const { name, set } = req.query;

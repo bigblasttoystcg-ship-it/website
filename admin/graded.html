@@ -24,6 +24,12 @@
       <div class="inv-filter-sidebar">
 
         <div class="inv-filter-section">
+          <div class="inv-filter-label">Set</div>
+          <input type="text" id="filter-set" placeholder="Type a set name..." oninput="loadGraded()" class="inv-filter-set-input" autocomplete="off">
+          <datalist id="filter-set-datalist"></datalist>
+        </div>
+
+        <div class="inv-filter-section">
           <div class="inv-filter-label">Grading Company</div>
           <div class="inv-filter-options">
             <label class="inv-filter-radio"><input type="radio" name="company" value="" onchange="loadGraded()" checked> All</label>
@@ -185,8 +191,9 @@ async function loadGraded() {
   const condition = getFilter('condition');
   const channel   = getFilter('channel');
   const company   = getFilter('company');
+  const set_name  = document.getElementById('filter-set').value;
   const sortBy    = document.getElementById('sort-by').value;
-  const params    = new URLSearchParams({ search, category: 'graded', condition, channel });
+  const params    = new URLSearchParams({ search, category: 'graded', condition, channel, set_name });
   let data = await API.get('/inventory?' + params).catch(() => []);
 
   // Client-side company filter (grade starts with company name)
@@ -352,6 +359,8 @@ async function deleteCard(id, name) {
 (async () => {
   currentUser = await initPage('Graded Cards');
   loadGraded();
+  initSetAutocomplete('filter-set');
+  initSetAutocomplete('f-set');
 })();
 </script>
 </body>
