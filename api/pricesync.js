@@ -73,12 +73,13 @@ router.get('/search', requireAuth, async (req, res) => {
   try {
     const namePart = `name:"${name.replace(/"/g, '')}"`;
     const setPart  = set ? ` set.name:${set.replace(/"/g, '')}` : '';
-    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=12&select=name,set,tcgplayer,images`;
+    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=12&select=name,set,rarity,tcgplayer,images`;
     const data = await fetchPokemonTCG(url);
     const cards = (data?.data || [])
       .map(c => ({
         name:         c.name,
         set:          c.set?.name || '',
+        variant:      c.rarity   || '',
         img_url:      c.images?.large || c.images?.small || null,
         market_price: extractMarketPrice(c.tcgplayer) || null,
       }))

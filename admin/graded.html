@@ -302,10 +302,10 @@ function openModal(c = null) {
   updateImgPreview(c?.img_url || '');
   document.getElementById('modal').classList.remove('hidden');
   initCardPicker('f-name', 'f-set', card => {
+    if (card.set)          document.getElementById('f-set').value   = card.set;
+    if (card.market_price) document.getElementById('f-price').value = card.market_price.toFixed(2);
     document.getElementById('f-img').value = card.img_url;
     updateImgPreview(card.img_url);
-    if (card.market_price && !document.getElementById('f-price').value)
-      document.getElementById('f-price').value = card.market_price.toFixed(2);
   });
 }
 
