@@ -38,6 +38,7 @@ app.use('/api/pokemoncards', require('./api/pokemoncards'));
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS grade TEXT;
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS variant TEXT;
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS sale_channel TEXT DEFAULT 'both';
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS price_paid NUMERIC(10,2) DEFAULT NULL;
       CREATE TABLE IF NOT EXISTS price_history (
         id SERIAL PRIMARY KEY,
         inventory_id TEXT NOT NULL,

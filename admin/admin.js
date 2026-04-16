@@ -147,6 +147,16 @@ function fmt(n) {
   return '$' + parseFloat(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// ── Profit display ────────────────────────────────────────
+function profitBadge(price, pricePaid) {
+  if (!pricePaid || pricePaid <= 0) return '';
+  const profit = parseFloat(price) - parseFloat(pricePaid);
+  const pct    = Math.round((profit / parseFloat(pricePaid)) * 100);
+  const color  = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  const sign   = profit >= 0 ? '+' : '';
+  return `<span style="color:${color};font-size:0.72rem;font-weight:700;white-space:nowrap">${sign}${fmt(profit)} (${sign}${pct}%)</span>`;
+}
+
 // ── Set name autocomplete ─────────────────────────────────
 function initSetAutocomplete(inputId) {
   const input = document.getElementById(inputId);

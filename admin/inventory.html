@@ -131,8 +131,12 @@
       </div>
       <div class="form-group"><label>Variant</label><input type="text" id="f-variant" placeholder="Special Illustration Rare"></div>
       <div class="form-row">
-        <div class="form-group"><label>Price ($)</label><input type="number" id="f-price" placeholder="0.00" step="0.01" min="0"></div>
+        <div class="form-group"><label>Selling Price ($)</label><input type="number" id="f-price" placeholder="0.00" step="0.01" min="0" oninput="updateProfitDisplay()"></div>
+        <div class="form-group"><label>Price Paid ($)</label><input type="number" id="f-price-paid" placeholder="0.00" step="0.01" min="0" oninput="updateProfitDisplay()"></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label>Low Stock Threshold</label><input type="number" id="f-threshold" value="3" min="0"></div>
+        <div class="form-group"><label style="color:var(--muted)">Profit</label><div id="f-profit-display" style="padding:9px 12px;background:var(--navy3);border:1px solid var(--border);border-radius:7px;font-size:0.88rem">—</div></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Online Stock</label><input type="number" id="f-online" value="0" min="0"></div>
@@ -236,6 +240,7 @@ async function loadInventory() {
           <span class="badge ${{ NM:'badge-ok', LP:'badge-low', MP:'badge-orange', DMG:'badge-out' }[i.condition] || 'badge-gray'}">${i.condition}</span>
         </div>
         <div class="inv-card-price">${fmt(i.price)}</div>
+        ${i.price_paid ? `<div style="margin-top:1px">${profitBadge(i.price, i.price_paid)}</div>` : ''}
         <div class="inv-card-stock" onclick="event.stopPropagation()">
           <div class="inv-stock-row">
             <span class="inv-stock-label">Online</span>
@@ -285,8 +290,10 @@ function openModal(item = null) {
   const gradeParts = item?.grade ? item.grade.split(' ') : [];
   document.getElementById('f-grade-company').value = gradeParts[0] || '';
   document.getElementById('f-grade-num').value     = gradeParts[1] || '';
-  document.getElementById('f-channel').value   = item?.sale_channel || 'both';
-  document.getElementById('f-img').value       = item?.img_url || '';
+  document.getElementById('f-channel').value      = item?.sale_channel || 'both';
+  document.getElementById('f-price-paid').value  = item?.price_paid || '';
+  document.getElementById('f-img').value          = item?.img_url || '';
+  updateProfitDisplay();
   updateImgPreview(item?.img_url || '');
   document.getElementById('modal').classList.remove('hidden');
   initCardPicker('f-name', 'f-set', card => {
@@ -296,6 +303,14 @@ function openModal(item = null) {
     document.getElementById('f-img').value = card.img_url;
     updateImgPreview(card.img_url);
   });
+}
+
+function updateProfitDisplay() {
+  const price     = parseFloat(document.getElementById('f-price').value) || 0;
+  const pricePaid = parseFloat(document.getElementById('f-price-paid').value) || 0;
+  const el = document.getElementById('f-profit-display');
+  if (!pricePaid) { el.innerHTML = '<span style="color:var(--muted)">—</span>'; return; }
+  el.innerHTML = profitBadge(price, pricePaid);
 }
 
 function closeModal() {
@@ -336,6 +351,7 @@ async function saveItem() {
     instore_stock: parseInt(document.getElementById('f-instore').value) || 0,
     low_stock_threshold: parseInt(document.getElementById('f-threshold').value) || 3,
     sale_channel: document.getElementById('f-channel').value || 'both',
+    price_paid:   parseFloat(document.getElementById('f-price-paid').value) || null,
     grade: (() => {
       const co  = document.getElementById('f-grade-company').value;
       const num = document.getElementById('f-grade-num').value;

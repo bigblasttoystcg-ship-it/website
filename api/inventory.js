@@ -50,12 +50,12 @@ router.get('/:id', requireAuth, async (req, res) => {
 
 // POST /api/inventory (admin only)
 router.post('/', requireAuth, requireAdmin, async (req, res) => {
-  const { name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade, sale_channel } = req.body;
+  const { name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade, sale_channel, price_paid } = req.body;
   try {
     const { rows } = await req.db.query(
-      `INSERT INTO inventory (name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade, sale_channel)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-      [name, set_name, variant, category, condition || 'NM', price || 0, online_stock || 0, instore_stock || 0, low_stock_threshold || 3, img_url, grade || null, sale_channel || 'both']
+      `INSERT INTO inventory (name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade, sale_channel, price_paid)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+      [name, set_name, variant, category, condition || 'NM', price || 0, online_stock || 0, instore_stock || 0, low_stock_threshold || 3, img_url, grade || null, sale_channel || 'both', price_paid || null]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
@@ -65,13 +65,13 @@ router.post('/', requireAuth, requireAdmin, async (req, res) => {
 
 // PUT /api/inventory/:id
 router.put('/:id', requireAuth, async (req, res) => {
-  const { name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade, sale_channel } = req.body;
+  const { name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade, sale_channel, price_paid } = req.body;
   try {
     const { rows } = await req.db.query(
       `UPDATE inventory SET name=$1, set_name=$2, variant=$3, category=$4, condition=$5,
-       price=$6, online_stock=$7, instore_stock=$8, low_stock_threshold=$9, img_url=$10, grade=$11, sale_channel=$12
-       WHERE id=$13 RETURNING *`,
-      [name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade || null, sale_channel || 'both', req.params.id]
+       price=$6, online_stock=$7, instore_stock=$8, low_stock_threshold=$9, img_url=$10, grade=$11, sale_channel=$12, price_paid=$13
+       WHERE id=$14 RETURNING *`,
+      [name, set_name, variant, category, condition, price, online_stock, instore_stock, low_stock_threshold, img_url, grade || null, sale_channel || 'both', price_paid || null, req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(rows[0]);

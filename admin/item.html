@@ -81,7 +81,11 @@
                 <div class="form-group"><label>In-Store Stock</label><input type="number" id="f-instore" min="0"></div>
               </div>
               <div class="form-row">
-                <div class="form-group"><label>Price ($)</label><input type="number" id="f-price" step="0.01" min="0" oninput="document.getElementById('item-header-price').textContent='$'+(parseFloat(this.value)||0).toFixed(2)"></div>
+                <div class="form-group"><label>Price ($)</label><input type="number" id="f-price" step="0.01" min="0" oninput="document.getElementById('item-header-price').textContent='$'+(parseFloat(this.value)||0).toFixed(2);updateItemProfit()"></div>
+                <div class="form-group"><label>Price Paid ($)</label><input type="number" id="f-price-paid" step="0.01" min="0" placeholder="0.00" oninput="updateItemProfit()"></div>
+              </div>
+              <div style="min-height:22px;margin-top:-6px;margin-bottom:4px" id="item-profit-display"></div>
+              <div class="form-row">
                 <div class="form-group"><label>Low Stock Alert</label><input type="number" id="f-threshold" min="0"></div>
               </div>
             </div>
@@ -175,6 +179,19 @@ let allHistory = [];
 const itemId = new URLSearchParams(location.search).get('id');
 if (!itemId) location.href = '/admin/inventory.html';
 
+function updateItemProfit() {
+  const price     = parseFloat(document.getElementById('f-price').value) || 0;
+  const pricePaid = parseFloat(document.getElementById('f-price-paid').value) || 0;
+  const el        = document.getElementById('item-profit-display');
+  if (!el) return;
+  if (!pricePaid) { el.innerHTML = ''; return; }
+  const profit = price - pricePaid;
+  const pct    = Math.round((profit / pricePaid) * 100);
+  const color  = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  const sign   = profit >= 0 ? '+' : '';
+  el.innerHTML = `<span style="color:${color};font-weight:700;font-size:0.82rem">Profit: ${sign}${fmt(profit)} (${sign}${pct}%)</span>`;
+}
+
 function updateItemImg(url) {
   const wrap = document.getElementById('item-img-wrap');
   if (url) {
@@ -218,8 +235,10 @@ function populateForm(item) {
   document.getElementById('f-grade-num').value     = gradeParts[1] || '';
   document.getElementById('f-channel').value       = item.sale_channel || 'both';
   document.getElementById('f-img').value           = item.img_url || '';
+  document.getElementById('f-price-paid').value    = item.price_paid || '';
   updateItemImg(item.img_url);
   updateGradeBadge();
+  updateItemProfit();
   const catCls  = item.category === 'graded' ? 'badge-gold' : 'badge-blue';
   const condCls = { NM:'badge-ok', LP:'badge-low', MP:'badge-orange', DMG:'badge-out' }[item.condition] || 'badge-gray';
   document.getElementById('item-badges').innerHTML =
@@ -294,7 +313,8 @@ async function saveItem() {
       const num = document.getElementById('f-grade-num').value;
       return co && num ? `${co} ${num}` : null;
     })(),
-    img_url: document.getElementById('f-img').value,
+    img_url:    document.getElementById('f-img').value,
+    price_paid: parseFloat(document.getElementById('f-price-paid').value) || null,
   };
   try {
     const updated = await API.put(`/inventory/${itemId}`, body);
