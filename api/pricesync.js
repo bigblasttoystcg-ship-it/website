@@ -75,14 +75,44 @@ router.get('/search', requireAuth, async (req, res) => {
     const setPart  = set ? ` set.name:${set.replace(/"/g, '')}` : '';
     const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=12&select=name,set,rarity,tcgplayer,images`;
     const data = await fetchPokemonTCG(url);
+    // Friendly label map for tcgplayer price keys
+    const VARIANT_LABELS = {
+      normal:                'Normal',
+      holofoil:              'Holofoil',
+      reverseHolofoil:       'Reverse Holo',
+      '1stEditionNormal':    '1st Edition Normal',
+      '1stEditionHolofoil':  '1st Edition Holo',
+      unlimitedNormal:       'Unlimited Normal',
+      unlimitedHolofoil:     'Unlimited Holo',
+      masterBallHolofoil:    'Master Ball Holo',
+      masterBallNormal:      'Master Ball Normal',
+      masterBallReverseHolo: 'Master Ball Reverse Holo',
+      pokeballHolofoil:      'Pokeball Holo',
+      pokeballNormal:        'Pokeball Normal',
+      pokeballReverseHolo:   'Pokeball Reverse Holo',
+    };
+
     const cards = (data?.data || [])
-      .map(c => ({
-        name:         c.name,
-        set:          c.set?.name || '',
-        variant:      c.rarity   || '',
-        img_url:      c.images?.large || c.images?.small || null,
-        market_price: extractMarketPrice(c.tcgplayer) || null,
-      }))
+      .map(c => {
+        const prices = c.tcgplayer?.prices || {};
+        const variants = Object.entries(prices)
+          .map(([key, val]) => ({
+            key,
+            label:  VARIANT_LABELS[key] || key,
+            market: val?.market ?? val?.mid ?? null,
+            low:    val?.low    ?? null,
+            high:   val?.high   ?? null,
+          }))
+          .filter(v => v.market !== null);
+        return {
+          name:     c.name,
+          set:      c.set?.name || '',
+          variant:  c.rarity   || '',
+          img_url:  c.images?.large || c.images?.small || null,
+          variants,                           // all price variants
+          market_price: extractMarketPrice(c.tcgplayer) || null,
+        };
+      })
       .filter(c => c.img_url);
     res.json(cards);
   } catch (err) {

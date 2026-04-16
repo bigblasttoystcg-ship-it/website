@@ -260,12 +260,13 @@ tr:hover td { background: rgba(0,170,255,0.03); cursor: pointer; }
 .inv-card-actions { display: flex; gap: 3px; flex-shrink: 0; }
 
 /* ── Card image picker ── */
-#card-picker {
-  display: flex; gap: 8px; flex-wrap: wrap;
-  max-height: 200px; overflow-y: auto;
-  padding: 4px 0;
-}
+#card-picker { padding: 4px 0; }
 .card-picker-status { color: var(--muted); font-size: 0.78rem; padding: 6px 2px; }
+
+.card-picker-cards {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  max-height: 190px; overflow-y: auto; padding-bottom: 4px;
+}
 .card-pick {
   width: 76px; flex-shrink: 0; cursor: pointer;
   border-radius: 7px; border: 2px solid transparent;
@@ -275,8 +276,27 @@ tr:hover td { background: rgba(0,170,255,0.03); cursor: pointer; }
 .card-pick:hover    { border-color: rgba(0,170,255,0.4); }
 .card-pick.selected { border-color: var(--blue); background: rgba(0,170,255,0.1); }
 .card-pick img      { width: 100%; border-radius: 3px; display: block; }
-.card-pick-name { font-size: 0.58rem; font-weight: 600; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.card-pick-set  { font-size: 0.54rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-pick-name   { font-size: 0.58rem; font-weight: 600; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-pick-set    { font-size: 0.54rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-pick-rarity { font-size: 0.52rem; color: #a78bfa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+
+.card-picker-variants { margin-top: 10px; }
+.card-picker-variants-label {
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--muted); font-weight: 700; margin-bottom: 7px;
+}
+.card-picker-variants-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.variant-btn {
+  display: flex; flex-direction: column; align-items: flex-start;
+  background: var(--navy3); border: 1px solid var(--border);
+  border-radius: 7px; padding: 7px 11px; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: border-color 0.15s, background 0.15s;
+  gap: 2px;
+}
+.variant-btn:hover  { border-color: rgba(0,170,255,0.4); background: rgba(0,170,255,0.05); }
+.variant-btn.active { border-color: var(--blue); background: rgba(0,170,255,0.1); }
+.variant-btn-label  { font-size: 0.75rem; font-weight: 600; color: #fff; }
+.variant-btn-price  { font-size: 0.78rem; color: var(--blue); font-weight: 700; }
 
 /* ── Item detail page ── */
 .item-body {

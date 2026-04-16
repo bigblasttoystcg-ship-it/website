@@ -186,20 +186,58 @@ function _renderPicker(cards, loading) {
     return;
   }
   el.dataset.searched = '1';
-  el.innerHTML = cards.map((c, i) => `
-    <div class="card-pick" onclick="_selectCard(this)" data-card='${JSON.stringify(c).replace(/'/g,"&#39;")}'>
-      <img src="${c.img_url}" alt="${c.name}" onerror="this.parentElement.style.display='none'">
-      <div class="card-pick-name">${c.name}</div>
-      <div class="card-pick-set">${c.set}</div>
-    </div>`).join('');
+  el.innerHTML = `
+    <div class="card-picker-cards">${cards.map((c, i) => `
+      <div class="card-pick" onclick="_expandCard(this, ${i})" data-idx="${i}" data-card='${JSON.stringify(c).replace(/'/g,"&#39;")}'>
+        <img src="${c.img_url}" alt="${c.name}" onerror="this.parentElement.style.display='none'">
+        <div class="card-pick-name">${c.name}</div>
+        <div class="card-pick-set">${c.set}</div>
+        ${c.variant ? `<div class="card-pick-rarity">${c.variant}</div>` : ''}
+      </div>`).join('')}
+    </div>
+    <div class="card-picker-variants" id="card-picker-variants"></div>`;
 }
 
-function _selectCard(el) {
+function _expandCard(el, idx) {
   document.querySelectorAll('.card-pick').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
   try {
     const card = JSON.parse(el.dataset.card);
-    if (_pickerSelect) _pickerSelect(card);
+    const varEl = document.getElementById('card-picker-variants');
+    if (!varEl) return;
+
+    if (!card.variants || !card.variants.length) {
+      // No price variants — select directly
+      if (_pickerSelect) _pickerSelect({ ...card });
+      varEl.innerHTML = '';
+      return;
+    }
+
+    varEl.innerHTML = `
+      <div class="card-picker-variants-label">Select print / finish:</div>
+      <div class="card-picker-variants-row">
+        ${card.variants.map(v => `
+          <button class="variant-btn" onclick="_selectVariant(this, '${el.dataset.idx}')"
+            data-card='${JSON.stringify(card).replace(/'/g,"&#39;")}'
+            data-variant='${JSON.stringify(v).replace(/'/g,"&#39;")}'>
+            <span class="variant-btn-label">${v.label}</span>
+            <span class="variant-btn-price">$${parseFloat(v.market).toFixed(2)}</span>
+          </button>`).join('')}
+      </div>`;
+  } catch {}
+}
+
+function _selectVariant(btn, cardIdx) {
+  document.querySelectorAll('.variant-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  try {
+    const card    = JSON.parse(btn.dataset.card);
+    const variant = JSON.parse(btn.dataset.variant);
+    if (_pickerSelect) _pickerSelect({
+      ...card,
+      market_price: variant.market,
+      variant:      card.variant ? `${card.variant} — ${variant.label}` : variant.label,
+    });
   } catch {}
 }
 
