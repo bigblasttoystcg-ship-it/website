@@ -59,6 +59,16 @@ function rowToCard(r) {
   };
 }
 
+// GET /api/pokemoncards/stats — how many cards are in the local DB
+router.get('/stats', requireAuth, async (req, res) => {
+  try {
+    const { rows } = await req.db.query('SELECT COUNT(*) as total FROM pokemon_cards');
+    res.json({ total: parseInt(rows[0].total), syncStatus });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/pokemoncards/sets?q= — autocomplete set names
 router.get('/sets', requireAuth, async (req, res) => {
   const { q } = req.query;
@@ -86,27 +96,45 @@ router.get('/search', requireAuth, async (req, res) => {
   const { name, set } = req.query;
   if (!name || name.length < 2) return res.json([]);
   try {
-    // Try local DB first
-    const params = [`%${name}%`];
-    let q = 'SELECT * FROM pokemon_cards WHERE name ILIKE $1';
-    if (set) { params.push(`%${set}%`); q += ` AND set_name ILIKE $${params.length}`; }
-    q += ' ORDER BY name LIMIT 24';
-    const { rows } = await req.db.query(q, params);
-    if (rows.length) return res.json(rows.map(rowToCard));
+    // Check if local DB has cards
+    const { rows: countRows } = await req.db.query('SELECT COUNT(*) as total FROM pokemon_cards');
+    const dbTotal = parseInt(countRows[0].total);
 
-    // Fallback: hit pokemontcg.io directly
-    const namePart = `name:${name.replace(/"/g, '')}*`;
-    const setPart  = set ? ` set.name:${set.replace(/"/g, '')}` : '';
-    const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=24&select=id,name,set,rarity,tcgplayer,images`;
-    const data = await fetchAPI(url);
-    res.json((data?.data || []).map(c => ({
-      name:         c.name,
-      set:          c.set?.name || '',
-      variant:      c.rarity   || '',
-      img_url:      c.images?.large || c.images?.small || null,
-      variants:     extractVariants(c.tcgplayer?.prices),
-      market_price: extractBestPrice(c.tcgplayer?.prices),
-    })).filter(c => c.img_url));
+    // Always run both in parallel — DB (if populated) and live API
+    const dbPromise = dbTotal > 0 ? (async () => {
+      const params = [`%${name}%`];
+      let q = 'SELECT * FROM pokemon_cards WHERE name ILIKE $1';
+      if (set) { params.push(`%${set}%`); q += ` AND set_name ILIKE $${params.length}`; }
+      q += ' ORDER BY name LIMIT 24';
+      const { rows } = await req.db.query(q, params);
+      return rows.map(rowToCard);
+    })() : Promise.resolve([]);
+
+    const apiPromise = (async () => {
+      const namePart = `name:${name.replace(/"/g, '')}`;
+      const setPart  = set ? ` set.name:${set.replace(/"/g, '')}` : '';
+      const url = `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(namePart + setPart)}&pageSize=24&select=id,name,set,rarity,tcgplayer,images`;
+      const data = await fetchAPI(url);
+      return (data?.data || []).map(c => ({
+        name:         c.name,
+        set:          c.set?.name || '',
+        variant:      c.rarity   || '',
+        img_url:      c.images?.large || c.images?.small || null,
+        variants:     extractVariants(c.tcgplayer?.prices),
+        market_price: extractBestPrice(c.tcgplayer?.prices),
+      })).filter(c => c.img_url);
+    })();
+
+    const [dbResults, apiResults] = await Promise.all([dbPromise, apiPromise.catch(() => [])]);
+
+    // Merge: DB results first (have stored prices), then any API results not already in DB
+    const seen = new Set(dbResults.map(c => `${c.name}|${c.set}|${c.variant}`));
+    const merged = [
+      ...dbResults,
+      ...apiResults.filter(c => !seen.has(`${c.name}|${c.set}|${c.variant}`))
+    ].slice(0, 24);
+
+    res.json(merged);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

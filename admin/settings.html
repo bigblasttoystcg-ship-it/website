@@ -85,28 +85,37 @@ async function saveSettings() {
 // ── Card DB Sync ──────────────────────────────────────────
 let _syncPoll = null;
 
-function renderSyncStatus(s) {
+async function checkSyncStatus() {
+  const [s, stats] = await Promise.all([
+    API.get('/pokemoncards/sync-status').catch(() => null),
+    API.get('/pokemoncards/stats').catch(() => null),
+  ]);
+  renderSyncStatus(s, stats);
+  return s;
+}
+
+function renderSyncStatus(s, stats) {
+  // Override the old renderSyncStatus with stats-aware version
   const el = document.getElementById('sync-status-panel');
-  if (!s) { el.style.display = 'none'; return; }
+  if (!s && !stats) { el.style.display = 'none'; return; }
   el.style.display = 'block';
-  if (s.running) {
+  const cardCount = stats?.total ?? 0;
+  const countLine = `<div style="color:var(--muted);font-size:0.78rem;margin-bottom:6px">${cardCount.toLocaleString()} cards in local database</div>`;
+  if (s?.running) {
     const pct = s.total ? Math.round((s.processed / s.total) * 100) : 0;
-    el.innerHTML = `
+    el.innerHTML = `${countLine}
       <div style="color:var(--blue);font-weight:600;margin-bottom:6px">⟳ Syncing… ${s.processed.toLocaleString()} / ${s.total.toLocaleString()} cards (${pct}%)</div>
       <div style="background:var(--navy2);border-radius:4px;height:6px;overflow:hidden">
         <div style="background:var(--blue);height:100%;width:${pct}%;transition:width 0.4s"></div>
       </div>`;
-  } else if (s.error) {
-    el.innerHTML = `<div style="color:var(--red)">✕ Error: ${s.error}</div>`;
-  } else if (s.lastSync) {
-    el.innerHTML = `<div style="color:var(--green)">✓ Last sync: ${new Date(s.lastSync).toLocaleString()} — ${s.processed.toLocaleString()} cards loaded</div>`;
+  } else if (s?.error) {
+    el.innerHTML = `${countLine}<div style="color:var(--red)">✕ Last error: ${s.error}</div>`;
+  } else if (cardCount === 0) {
+    el.innerHTML = `<div style="color:var(--yellow)">⚠ No cards synced yet — click Full Sync to download the complete card database.</div>`;
+  } else {
+    const lastSync = s?.lastSync ? new Date(s.lastSync).toLocaleString() : 'Unknown';
+    el.innerHTML = `${countLine}<div style="color:var(--green)">✓ Last sync: ${lastSync}</div>`;
   }
-}
-
-async function checkSyncStatus() {
-  const s = await API.get('/pokemoncards/sync-status').catch(() => null);
-  renderSyncStatus(s);
-  return s;
 }
 
 function startPolling() {
