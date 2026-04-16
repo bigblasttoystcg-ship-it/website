@@ -206,6 +206,7 @@ async function loadInventory() {
       <td onclick="event.stopPropagation()">
         <div style="display:flex;gap:4px;justify-content:flex-end;align-items:center;white-space:nowrap">
           ${i.category === 'singles' ? `<button class="btn btn-ghost btn-sm" onclick="syncSinglePrice('${i.id}','${i.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="Sync market price">↻</button>` : ''}
+          <button class="btn btn-ghost btn-sm" onclick="duplicateItem(${iData(i)});event.stopPropagation()" title="Duplicate card">⧉</button>
           ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}','${i.name}');event.stopPropagation()">Del</button>` : ''}
         </div>
       </td>
@@ -261,6 +262,12 @@ function updateImgPreview(url) {
 }
 
 function editItem(item) { openModal(item); }
+
+function duplicateItem(item) {
+  // Open modal pre-filled but as a new item (no id), with stock reset to 0
+  openModal({ ...item, id: null, online_stock: 0, instore_stock: 0 });
+  document.getElementById('modal-title').textContent = 'Duplicate Item';
+}
 
 async function saveItem() {
   const id = document.getElementById('edit-id').value;
