@@ -169,7 +169,7 @@ function initCardPicker(nameId, setId, onSelect) {
 async function _searchCards(name, set) {
   try {
     const params = new URLSearchParams({ name, set });
-    const results = await API.get('/pricesync/search?' + params);
+    const results = await API.get('/pokemoncards/search?' + params);
     _renderPicker(results, false);
   } catch { _renderPicker([], false); }
 }

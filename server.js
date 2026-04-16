@@ -27,7 +27,8 @@ app.use('/api/staff',     require('./api/staff'));
 app.use('/api/settings',  require('./api/settings'));
 app.use('/api/import',    require('./api/import'));
 app.use('/api/sales',     require('./api/sales'));
-app.use('/api/pricesync', require('./api/pricesync'));
+app.use('/api/pricesync',    require('./api/pricesync'));
+app.use('/api/pokemoncards', require('./api/pokemoncards'));
 
 // Auto-migrate: ensure all columns exist (safe to re-run)
 (async () => {
@@ -43,6 +44,17 @@ app.use('/api/pricesync', require('./api/pricesync'));
         price NUMERIC(10,2) NOT NULL,
         recorded_at TIMESTAMPTZ DEFAULT NOW()
       );
+      CREATE TABLE IF NOT EXISTS pokemon_cards (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        set_name TEXT,
+        set_id TEXT,
+        rarity TEXT,
+        img_url TEXT,
+        prices JSONB,
+        updated_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS pokemon_cards_name_idx ON pokemon_cards (name text_pattern_ops);
     `);
     console.log('DB migration OK');
   } catch (err) {

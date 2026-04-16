@@ -15,7 +15,25 @@
     <div class="topbar">
       <div class="page-title" id="page-title">Settings</div>
     </div>
-    <div class="content">
+    <div class="content" style="display:flex;flex-direction:column;gap:20px">
+
+      <!-- Card Database Sync -->
+      <div class="panel" style="max-width:600px">
+        <div class="panel-header"><div class="panel-title">Card Database</div></div>
+        <div class="panel-body" style="display:flex;flex-direction:column;gap:14px">
+          <p style="font-size:0.85rem;color:var(--muted);line-height:1.6">
+            Sync the full Pokémon TCG card database locally for fast, complete search — including all sets, variants, reverse holos, Master Ball, Pokeball prints, and live market prices.<br>
+            <strong style="color:#fff">Full Sync</strong> downloads every card (~15,000+). Run once, then use <strong style="color:#fff">Refresh Prices</strong> daily to keep market prices current.
+          </p>
+          <div id="sync-status-panel" style="background:var(--navy3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:0.83rem;display:none"></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary" id="btn-full-sync" onclick="startFullSync()">⬇ Full Sync (All Cards)</button>
+            <button class="btn btn-ghost"   id="btn-price-refresh" onclick="startPriceRefresh()">↻ Refresh Prices Only</button>
+            <button class="btn btn-ghost"   onclick="checkSyncStatus()">Check Status</button>
+          </div>
+        </div>
+      </div>
+
       <div class="panel" style="max-width:600px">
         <div class="panel-header"><div class="panel-title">Store Settings</div></div>
         <div class="panel-body" style="display:flex;flex-direction:column;gap:16px">
@@ -64,7 +82,62 @@ async function saveSettings() {
   catch (e) { showToast(e.message, 'error'); }
 }
 
-(async () => { await initPage('Settings'); loadSettings(); })();
+// ── Card DB Sync ──────────────────────────────────────────
+let _syncPoll = null;
+
+function renderSyncStatus(s) {
+  const el = document.getElementById('sync-status-panel');
+  if (!s) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  if (s.running) {
+    const pct = s.total ? Math.round((s.processed / s.total) * 100) : 0;
+    el.innerHTML = `
+      <div style="color:var(--blue);font-weight:600;margin-bottom:6px">⟳ Syncing… ${s.processed.toLocaleString()} / ${s.total.toLocaleString()} cards (${pct}%)</div>
+      <div style="background:var(--navy2);border-radius:4px;height:6px;overflow:hidden">
+        <div style="background:var(--blue);height:100%;width:${pct}%;transition:width 0.4s"></div>
+      </div>`;
+  } else if (s.error) {
+    el.innerHTML = `<div style="color:var(--red)">✕ Error: ${s.error}</div>`;
+  } else if (s.lastSync) {
+    el.innerHTML = `<div style="color:var(--green)">✓ Last sync: ${new Date(s.lastSync).toLocaleString()} — ${s.processed.toLocaleString()} cards loaded</div>`;
+  }
+}
+
+async function checkSyncStatus() {
+  const s = await API.get('/pokemoncards/sync-status').catch(() => null);
+  renderSyncStatus(s);
+  return s;
+}
+
+function startPolling() {
+  clearInterval(_syncPoll);
+  _syncPoll = setInterval(async () => {
+    const s = await checkSyncStatus();
+    if (s && !s.running) {
+      clearInterval(_syncPoll);
+      document.getElementById('btn-full-sync').disabled    = false;
+      document.getElementById('btn-price-refresh').disabled = false;
+    }
+  }, 2000);
+}
+
+async function startFullSync() {
+  if (!confirm('This will download all ~15,000+ Pokémon TCG cards. It runs in the background and may take several minutes. Continue?')) return;
+  document.getElementById('btn-full-sync').disabled    = true;
+  document.getElementById('btn-price-refresh').disabled = true;
+  await API.post('/pokemoncards/sync', {}).catch(e => showToast(e.message, 'error'));
+  showToast('Full sync started — check status below');
+  startPolling();
+}
+
+async function startPriceRefresh() {
+  document.getElementById('btn-price-refresh').disabled = true;
+  await API.post('/pokemoncards/refresh-prices', {}).catch(e => showToast(e.message, 'error'));
+  showToast('Price refresh started');
+  startPolling();
+}
+
+(async () => { await initPage('Settings'); loadSettings(); checkSyncStatus(); })();
 </script>
 </body>
 </html>
