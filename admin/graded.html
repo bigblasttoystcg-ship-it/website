@@ -14,49 +14,68 @@
   <div class="main">
     <div class="topbar">
       <div class="page-title" id="page-title">Graded Cards</div>
+      <input type="text" id="search" placeholder="Search cards or sets..." oninput="loadGraded()" class="topbar-search-input">
       <button class="btn btn-primary" onclick="openModal()">+ Add Graded Card</button>
     </div>
-    <div class="content">
-      <div class="filters">
-        <input type="text" id="search" placeholder="Search cards or sets..." oninput="loadGraded()" style="flex:1;min-width:200px">
-        <select id="filter-condition" onchange="loadGraded()">
-          <option value="">All Conditions</option>
-          <option value="NM">NM</option>
-          <option value="LP">LP</option>
-          <option value="MP">MP</option>
-          <option value="HP">HP</option>
-          <option value="DMG">DMG</option>
-        </select>
-        <select id="sort-by" onchange="loadGraded()">
-          <option value="updated">Recently Updated</option>
-          <option value="price-high">Price: High to Low</option>
-          <option value="price-low">Price: Low to High</option>
-          <option value="name-az">Name: A → Z</option>
-          <option value="grade-high">Grade: High to Low</option>
-        </select>
+
+    <div class="inv-layout">
+
+      <!-- Filter Sidebar -->
+      <div class="inv-filter-sidebar">
+
+        <div class="inv-filter-section">
+          <div class="inv-filter-label">Grading Company</div>
+          <div class="inv-filter-options">
+            <label class="inv-filter-radio"><input type="radio" name="company" value="" onchange="loadGraded()" checked> All</label>
+            <label class="inv-filter-radio"><input type="radio" name="company" value="PSA" onchange="loadGraded()"> PSA</label>
+            <label class="inv-filter-radio"><input type="radio" name="company" value="BGS" onchange="loadGraded()"> BGS</label>
+            <label class="inv-filter-radio"><input type="radio" name="company" value="CGC" onchange="loadGraded()"> CGC</label>
+            <label class="inv-filter-radio"><input type="radio" name="company" value="TAG" onchange="loadGraded()"> TAG</label>
+          </div>
+        </div>
+
+        <div class="inv-filter-section">
+          <div class="inv-filter-label">Condition</div>
+          <div class="inv-filter-options">
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="" onchange="loadGraded()" checked> All</label>
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="NM" onchange="loadGraded()"> NM</label>
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="LP" onchange="loadGraded()"> LP</label>
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="MP" onchange="loadGraded()"> MP</label>
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="HP" onchange="loadGraded()"> HP</label>
+            <label class="inv-filter-radio"><input type="radio" name="condition" value="DMG" onchange="loadGraded()"> DMG</label>
+          </div>
+        </div>
+
+        <div class="inv-filter-section">
+          <div class="inv-filter-label">Sale Channel</div>
+          <div class="inv-filter-options">
+            <label class="inv-filter-radio"><input type="radio" name="channel" value="" onchange="loadGraded()" checked> All Channels</label>
+            <label class="inv-filter-radio"><input type="radio" name="channel" value="online" onchange="loadGraded()"> Online</label>
+            <label class="inv-filter-radio"><input type="radio" name="channel" value="instore" onchange="loadGraded()"> In-Person</label>
+          </div>
+        </div>
+
+        <div class="inv-filter-section">
+          <div class="inv-filter-label">Sort By</div>
+          <select id="sort-by" onchange="loadGraded()">
+            <option value="updated">Recently Updated</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="name-az">Name: A → Z</option>
+            <option value="grade-high">Grade: High to Low</option>
+            <option value="grade-low">Grade: Low to High</option>
+          </select>
+        </div>
+
       </div>
-      <div class="panel">
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th></th>
-                <th>Card / Set</th>
-                <th>Grade</th>
-                <th>Condition</th>
-                <th>Price</th>
-                <th>Online Stock</th>
-                <th>In-Store Stock</th>
-                <th>Status</th>
-                <th style="text-align:right"></th>
-              </tr>
-            </thead>
-            <tbody id="graded-table">
-              <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr>
-            </tbody>
-          </table>
+
+      <!-- Card Grid -->
+      <div class="inv-grid-wrap">
+        <div class="inv-grid" id="graded-grid">
+          <div style="color:var(--muted);padding:48px;text-align:center">Loading...</div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
@@ -71,7 +90,6 @@
     <div class="modal-body">
       <input type="hidden" id="edit-id">
 
-      <!-- Image preview -->
       <div id="modal-img-wrap" style="display:none;text-align:center;margin-bottom:16px">
         <img id="modal-img" src="" alt="Card image"
           style="max-height:200px;max-width:100%;border-radius:8px;object-fit:contain;box-shadow:0 4px 20px rgba(0,0,0,0.4)">
@@ -111,7 +129,8 @@
         <div class="form-group"><label>Condition</label>
           <select id="f-condition">
             <option value="NM">NM</option><option value="LP">LP</option>
-            <option value="MP">MP</option><option value="HP">HP</option><option value="DMG">DMG</option>
+            <option value="MP">MP</option><option value="HP">HP</option>
+            <option value="DMG">DMG</option>
           </select>
         </div>
         <div class="form-group"><label>Price ($)</label>
@@ -121,6 +140,13 @@
       <div class="form-row">
         <div class="form-group"><label>Online Stock</label><input type="number" id="f-online" value="0" min="0"></div>
         <div class="form-group"><label>In-Store Stock</label><input type="number" id="f-instore" value="0" min="0"></div>
+      </div>
+      <div class="form-group"><label>Sale Channel</label>
+        <select id="f-channel">
+          <option value="both">Online &amp; In-Person</option>
+          <option value="online">Online Only</option>
+          <option value="instore">In-Person Only</option>
+        </select>
       </div>
       <div class="form-group"><label>Image URL</label>
         <input type="url" id="f-img" placeholder="https://..." oninput="updateImgPreview(this.value)">
@@ -137,72 +163,91 @@
 <script>
 let currentUser;
 
-// Clean raw grade string to "PSA 10" format
 function cleanGrade(g) {
   if (!g) return null;
   const co = ['PSA','BGS','CGC','TAG'].find(c => g.toUpperCase().startsWith(c));
   const match = g.match(/(\d+(\.\d+)?)/);
   if (!co || !match) return g;
-  const num = parseFloat(match[1]);
-  return `${co} ${num % 1 === 0 ? num : num}`;
+  return `${co} ${parseFloat(match[1])}`;
+}
+
+function getFilter(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : '';
 }
 
 async function loadGraded() {
   const search    = document.getElementById('search').value;
-  const condition = document.getElementById('filter-condition').value;
+  const condition = getFilter('condition');
+  const channel   = getFilter('channel');
+  const company   = getFilter('company');
   const sortBy    = document.getElementById('sort-by').value;
-  const params    = new URLSearchParams({ search, category: 'graded', condition });
+  const params    = new URLSearchParams({ search, category: 'graded', condition, channel });
   let data = await API.get('/inventory?' + params).catch(() => []);
 
+  // Client-side company filter (grade starts with company name)
+  if (company) data = data.filter(c => (c.grade || '').toUpperCase().startsWith(company));
+
   data.sort((a, b) => {
+    const ga = parseFloat((a.grade || '').split(' ')[1]) || 0;
+    const gb = parseFloat((b.grade || '').split(' ')[1]) || 0;
     switch (sortBy) {
-      case 'price-high': return b.price - a.price;
-      case 'price-low':  return a.price - b.price;
-      case 'name-az':    return a.name.localeCompare(b.name);
-      case 'grade-high': {
-        const ga = parseFloat((a.grade || '').split(' ')[1]) || 0;
-        const gb = parseFloat((b.grade || '').split(' ')[1]) || 0;
-        return gb - ga;
-      }
-      default: return 0;
+      case 'price-high':  return b.price - a.price;
+      case 'price-low':   return a.price - b.price;
+      case 'name-az':     return a.name.localeCompare(b.name);
+      case 'grade-high':  return gb - ga;
+      case 'grade-low':   return ga - gb;
+      default:            return 0;
     }
   });
 
   const isAdmin = currentUser?.role === 'admin';
+  const iData = c => JSON.stringify(c).replace(/"/g, '&quot;');
 
-  document.getElementById('graded-table').innerHTML = data.length ? data.map(c => `
-    <tr style="cursor:pointer" onclick="editCard(${JSON.stringify(c).replace(/"/g,'&quot;')})">
-      <td style="width:48px" onclick="event.stopPropagation()">
+  document.getElementById('graded-grid').innerHTML = data.length ? data.map(c => {
+    const grade   = cleanGrade(c.grade);
+    const condCls = { NM:'badge-ok', LP:'badge-low', MP:'badge-orange', DMG:'badge-out' }[c.condition] || 'badge-gray';
+    return `
+    <div class="inv-card" onclick="location.href='/admin/item.html?id=${c.id}'">
+      <div class="inv-card-img-wrap">
         ${c.img_url
-          ? `<img src="${c.img_url}" alt="${c.name}" style="width:44px;height:auto;border-radius:4px;display:block;object-fit:contain">`
-          : `<div style="width:44px;height:60px;background:var(--navy3);border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:0.65rem">No img</div>`}
-      </td>
-      <td>
-        <div class="td-name">${c.name}</div>
-        <div class="td-sub">${c.set_name || ''}</div>
-      </td>
-      <td>${cleanGrade(c.grade)
-        ? `<span class="badge badge-purple">${cleanGrade(c.grade)}</span>`
-        : '<span style="color:var(--muted)">—</span>'}
-      </td>
-      <td><span class="badge badge-gray">${c.condition}</span></td>
-      <td>${fmt(c.price)}</td>
-      <td onclick="event.stopPropagation()">
-        <input class="stock-input" type="number" value="${c.online_stock}" min="0"
-          onchange="updateStock('${c.id}', this, 'online')" title="Online stock">
-      </td>
-      <td onclick="event.stopPropagation()">
-        <input class="stock-input" type="number" value="${c.instore_stock}" min="0"
-          onchange="updateStock('${c.id}', this, 'instore')" title="In-store stock">
-      </td>
-      <td>${stockBadge(c.online_stock, c.instore_stock, c.low_stock_threshold)}</td>
-      <td onclick="event.stopPropagation()">
-        <div style="display:flex;gap:4px;justify-content:flex-end;align-items:center;white-space:nowrap">
-          ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteCard('${c.id}','${c.name}');event.stopPropagation()">Del</button>` : ''}
+          ? `<img src="${c.img_url}" alt="${c.name}" class="inv-card-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+          : ''}
+        <div class="inv-card-img-placeholder" style="${c.img_url ? 'display:none' : ''}">
+          <span>No Image</span>
         </div>
-      </td>
-    </tr>`).join('') :
-    '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">No graded cards found</td></tr>';
+        ${grade ? `<div class="inv-grade-badge">${grade}</div>` : ''}
+        ${c.sale_channel === 'online'  ? `<div class="inv-channel-badge ch-online">Online</div>`    : ''}
+        ${c.sale_channel === 'instore' ? `<div class="inv-channel-badge ch-instore">In-Person</div>` : ''}
+      </div>
+      <div class="inv-card-body">
+        <div class="inv-card-name">${c.name}</div>
+        <div class="inv-card-sub">${c.set_name || ''}</div>
+        <div class="inv-card-badges">
+          <span class="badge badge-gold">graded</span>
+          <span class="badge ${condCls}">${c.condition}</span>
+        </div>
+        <div class="inv-card-price">${fmt(c.price)}</div>
+        <div class="inv-card-stock" onclick="event.stopPropagation()">
+          <div class="inv-stock-row">
+            <span class="inv-stock-label">Online</span>
+            <input class="stock-input" type="number" value="${c.online_stock}" min="0" onchange="updateStock('${c.id}', this, 'online')" title="Online stock">
+          </div>
+          <div class="inv-stock-row">
+            <span class="inv-stock-label">In-Store</span>
+            <input class="stock-input" type="number" value="${c.instore_stock}" min="0" onchange="updateStock('${c.id}', this, 'instore')" title="In-store stock">
+          </div>
+        </div>
+        <div class="inv-card-footer" onclick="event.stopPropagation()">
+          ${stockBadge(c.online_stock, c.instore_stock, c.low_stock_threshold)}
+          <div class="inv-card-actions">
+            ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteCard('${c.id}','${c.name}');event.stopPropagation()">Del</button>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('') :
+  '<div style="color:var(--muted);padding:48px;text-align:center;width:100%">No graded cards found</div>';
 }
 
 async function updateStock(id, input, field) {
@@ -230,45 +275,46 @@ function updateImgPreview(url) {
 }
 
 function openModal(c = null) {
-  document.getElementById('edit-id').value        = c?.id || '';
+  document.getElementById('edit-id').value          = c?.id || '';
   document.getElementById('modal-title').textContent = c ? 'Edit Graded Card' : 'Add Graded Card';
-  document.getElementById('f-name').value         = c?.name || '';
-  document.getElementById('f-set').value          = c?.set_name || '';
-  document.getElementById('f-condition').value    = c?.condition || 'NM';
-  document.getElementById('f-price').value        = c?.price || '';
-  document.getElementById('f-online').value       = c?.online_stock ?? 0;
-  document.getElementById('f-instore').value      = c?.instore_stock ?? 0;
-  document.getElementById('f-img').value          = c?.img_url || '';
+  document.getElementById('f-name').value           = c?.name || '';
+  document.getElementById('f-set').value            = c?.set_name || '';
+  document.getElementById('f-condition').value      = c?.condition || 'NM';
+  document.getElementById('f-price').value          = c?.price || '';
+  document.getElementById('f-online').value         = c?.online_stock ?? 0;
+  document.getElementById('f-instore').value        = c?.instore_stock ?? 0;
+  document.getElementById('f-channel').value        = c?.sale_channel || 'both';
+  document.getElementById('f-img').value            = c?.img_url || '';
   const gradeParts = cleanGrade(c?.grade) ? cleanGrade(c.grade).split(' ') : [];
-  document.getElementById('f-grade-company').value = gradeParts[0] || '';
-  document.getElementById('f-grade-num').value     = gradeParts[1] || '';
+  document.getElementById('f-grade-company').value  = gradeParts[0] || '';
+  document.getElementById('f-grade-num').value      = gradeParts[1] || '';
   updateImgPreview(c?.img_url || '');
   document.getElementById('modal').classList.remove('hidden');
 }
 
 function closeModal() { document.getElementById('modal').classList.add('hidden'); }
-function editCard(c)  { openModal(c); }
 
 async function saveCard() {
-  const id = document.getElementById('edit-id').value;
+  const id  = document.getElementById('edit-id').value;
   const co  = document.getElementById('f-grade-company').value;
   const num = document.getElementById('f-grade-num').value;
   const body = {
-    name:               document.getElementById('f-name').value,
-    set_name:           document.getElementById('f-set').value,
-    category:           'graded',
-    condition:          document.getElementById('f-condition').value,
-    price:              parseFloat(document.getElementById('f-price').value) || 0,
-    online_stock:       parseInt(document.getElementById('f-online').value) || 0,
-    instore_stock:      parseInt(document.getElementById('f-instore').value) || 0,
+    name:                document.getElementById('f-name').value,
+    set_name:            document.getElementById('f-set').value,
+    category:            'graded',
+    condition:           document.getElementById('f-condition').value,
+    price:               parseFloat(document.getElementById('f-price').value) || 0,
+    online_stock:        parseInt(document.getElementById('f-online').value)   || 0,
+    instore_stock:       parseInt(document.getElementById('f-instore').value)  || 0,
     low_stock_threshold: 1,
-    grade:              (co && num) ? `${co} ${num}` : null,
-    img_url:            document.getElementById('f-img').value || null,
-    variant:            null,
+    sale_channel:        document.getElementById('f-channel').value || 'both',
+    grade:               (co && num) ? `${co} ${num}` : null,
+    img_url:             document.getElementById('f-img').value || null,
+    variant:             null,
   };
   try {
     if (id) { await API.put(`/inventory/${id}`, body); showToast('Card updated'); }
-    else     { await API.post('/inventory', body);      showToast('Card added'); }
+    else     { await API.post('/inventory', body);      showToast('Card added');   }
     closeModal();
     loadGraded();
   } catch (e) { showToast(e.message, 'error'); }
