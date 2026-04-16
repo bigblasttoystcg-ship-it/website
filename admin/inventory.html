@@ -221,8 +221,8 @@ async function loadInventory() {
         <div class="inv-card-name">${i.name}</div>
         <div class="inv-card-sub">${[i.set_name, i.variant].filter(Boolean).join(' · ')}</div>
         <div class="inv-card-badges">
-          <span class="badge badge-blue">${i.category}</span>
-          <span class="badge badge-gray">${i.condition}</span>
+          <span class="badge ${i.category === 'graded' ? 'badge-gold' : 'badge-blue'}">${i.category}</span>
+          <span class="badge ${{ NM:'badge-ok', LP:'badge-low', MP:'badge-orange', DMG:'badge-out' }[i.condition] || 'badge-gray'}">${i.condition}</span>
         </div>
         <div class="inv-card-price">${fmt(i.price)}</div>
         <div class="inv-card-stock" onclick="event.stopPropagation()">

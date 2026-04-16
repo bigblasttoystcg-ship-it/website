@@ -32,6 +32,7 @@
       <div style="margin-bottom:22px">
         <h1 style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.04em;line-height:1" id="item-title">Loading...</h1>
         <div style="color:var(--muted);font-size:0.85rem;margin-top:4px" id="item-subtitle"></div>
+        <div style="display:flex;gap:6px;margin-top:8px" id="item-badges"></div>
       </div>
 
       <!-- 3-Column Body -->
@@ -219,6 +220,10 @@ function populateForm(item) {
   document.getElementById('f-img').value           = item.img_url || '';
   updateItemImg(item.img_url);
   updateGradeBadge();
+  const catCls  = item.category === 'graded' ? 'badge-gold' : 'badge-blue';
+  const condCls = { NM:'badge-ok', LP:'badge-low', MP:'badge-orange', DMG:'badge-out' }[item.condition] || 'badge-gray';
+  document.getElementById('item-badges').innerHTML =
+    `<span class="badge ${catCls}">${item.category}</span><span class="badge ${condCls}">${item.condition}</span>`;
   document.title = `${item.name} — BigBlastToys Admin`;
 }
 
