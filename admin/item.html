@@ -16,360 +16,651 @@
 
     <!-- Topbar -->
     <div class="topbar">
-      <button class="btn btn-ghost btn-sm" onclick="history.back()">← Back</button>
-      <div class="item-breadcrumb" id="item-breadcrumb" style="color:var(--muted);font-size:0.82rem">Inventory</div>
+      <button class="btn btn-ghost btn-sm" onclick="history.back()">&#8592; Back</button>
+      <div style="color:var(--muted);font-size:0.82rem" id="item-breadcrumb">Inventory</div>
       <div style="flex:1"></div>
       <div style="font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--blue);letter-spacing:0.04em" id="item-header-price"></div>
-      <button class="btn btn-ghost btn-sm" id="sync-btn" onclick="syncPrice()" title="Pull latest market price from Pokemon TCG API">↻ Sync Market Price</button>
-      <button class="btn btn-ghost btn-sm" onclick="duplicateAndRedirect()">⧉ Duplicate</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteItem()">Delete</button>
-      <button class="btn btn-primary" onclick="saveItem()">Save Changes</button>
+      <button class="btn btn-ghost btn-sm" id="sync-btn" onclick="syncPrice()">&#8635; Sync Price</button>
+      <button class="btn btn-ghost btn-sm" onclick="openPdPanel()">&#xB7;&#xB7;&#xB7;</button>
+      <button class="btn btn-primary btn-sm" onclick="saveItem()">Save Changes</button>
     </div>
 
-    <div class="content" style="padding:24px;overflow-y:auto">
+    <!-- 3-col body -->
+    <div class="item-3col">
 
-      <!-- Card Title Row -->
-      <div style="margin-bottom:22px">
-        <h1 style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.04em;line-height:1" id="item-title">Loading...</h1>
-        <div style="color:var(--muted);font-size:0.85rem;margin-top:4px" id="item-subtitle"></div>
-        <div style="display:flex;gap:6px;margin-top:8px" id="item-badges"></div>
+      <!-- LEFT col -->
+      <div class="item-left-col">
+        <div class="item-card-img-wrap" id="item-img-wrap">
+          <span class="no-img">No Image</span>
+        </div>
+        <div>
+          <div class="item-left-name" id="item-left-name">Loading...</div>
+          <div class="item-left-meta" id="item-left-meta"></div>
+        </div>
+        <div id="item-left-badges" style="display:flex;gap:5px;flex-wrap:wrap"></div>
+        <div class="item-left-price-block">
+          <div class="item-left-price-label">Your Price</div>
+          <div class="item-left-price-val" id="item-left-price">&#x2014;</div>
+          <div class="item-left-profit" id="item-left-profit"></div>
+        </div>
+        <div class="item-left-stock" id="item-left-stock"></div>
+        <!-- Edit fields -->
+        <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:10px">
+          <div class="form-group"><label>Name</label><input type="text" id="f-name" oninput="onNameInput(this.value)"></div>
+          <div class="form-group"><label>Set Name</label><input type="text" id="f-set"></div>
+          <div class="form-group"><label>Variant</label><input type="text" id="f-variant"></div>
+          <div class="form-group"><label>Category</label>
+            <select id="f-category">
+              <option value="singles">Singles</option>
+              <option value="sealed">Sealed</option>
+              <option value="graded">Graded</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Sale Channel</label>
+            <select id="f-channel">
+              <option value="both">Online &amp; In-Person</option>
+              <option value="online">Online Only</option>
+              <option value="instore">In-Person Only</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Price ($)</label>
+            <input type="number" id="f-price" step="0.01" min="0" oninput="onPriceInput(this.value)">
+          </div>
+          <div class="form-group"><label>Image URL</label>
+            <input type="url" id="f-img" oninput="updateItemImg(this.value)">
+          </div>
+          <div class="form-group"><label>Grading Co.</label>
+            <select id="f-grade-company">
+              <option value="">Ungraded</option>
+              <option value="PSA">PSA</option><option value="BGS">BGS</option>
+              <option value="CGC">CGC</option><option value="TAG">TAG</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Grade</label>
+            <select id="f-grade-num">
+              <option value="">&#x2014;</option>
+              <option>1</option><option>1.5</option><option>2</option><option>2.5</option>
+              <option>3</option><option>3.5</option><option>4</option><option>4.5</option>
+              <option>5</option><option>5.5</option><option>6</option><option>6.5</option>
+              <option>7</option><option>7.5</option><option>8</option><option>8.5</option>
+              <option>9</option><option>9.5</option><option>10</option>
+            </select>
+          </div>
+        </div>
       </div>
 
-      <!-- 3-Column Body -->
-      <div class="item-body">
+      <!-- CENTER col: charts -->
+      <div class="item-center-col">
 
-        <!-- Left: Image -->
-        <div class="item-image-col">
-          <div class="item-img-wrap" id="item-img-wrap">
-            <div class="item-img-placeholder">No Image</div>
+        <!-- Ungraded price chart -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Ungraded Price History</span>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-ghost btn-sm chart-range-btn active" data-range="all" onclick="setRange('raw','all')">ALL</button>
+              <button class="btn btn-ghost btn-sm chart-range-btn" data-range="3m" onclick="setRange('raw','3m')">3M</button>
+              <button class="btn btn-ghost btn-sm chart-range-btn" data-range="1m" onclick="setRange('raw','1m')">1M</button>
+              <button class="btn btn-ghost btn-sm chart-range-btn" data-range="1w" onclick="setRange('raw','1w')">1W</button>
+            </div>
           </div>
-          <div class="form-group" style="margin-top:12px">
-            <label>Image URL</label>
-            <input type="url" id="f-img" placeholder="https://..." oninput="updateItemImg(this.value)">
-          </div>
-          <div id="item-grade-display" style="display:none;margin-top:10px;text-align:center">
-            <span class="badge badge-purple" style="font-size:0.85rem;padding:6px 14px" id="item-grade-badge"></span>
+          <div class="panel-body" style="position:relative;min-height:160px;display:flex;align-items:center;justify-content:center">
+            <canvas id="price-chart" style="width:100%;display:none"></canvas>
+            <div id="chart-empty" style="color:var(--muted);font-size:0.85rem;text-align:center">No price history yet.<br>Price changes appear here automatically.</div>
           </div>
         </div>
 
-        <!-- Center: Price History -->
-        <div class="item-chart-col">
-          <div class="panel">
-            <div class="panel-header">
-              <span class="panel-title">Price History</span>
-              <div style="display:flex;gap:4px">
-                <button class="btn btn-ghost btn-sm chart-range-btn active" data-range="all" onclick="setRange('all')">ALL</button>
-                <button class="btn btn-ghost btn-sm chart-range-btn" data-range="3m"  onclick="setRange('3m')">3M</button>
-                <button class="btn btn-ghost btn-sm chart-range-btn" data-range="1m"  onclick="setRange('1m')">1M</button>
-                <button class="btn btn-ghost btn-sm chart-range-btn" data-range="1w"  onclick="setRange('1w')">1W</button>
-              </div>
-            </div>
-            <div class="panel-body" style="position:relative;min-height:220px;display:flex;align-items:center;justify-content:center">
-              <canvas id="price-chart" style="width:100%;display:none"></canvas>
-              <div id="chart-empty" style="color:var(--muted);font-size:0.85rem;text-align:center;line-height:1.6">
-                No price history yet.<br>Price changes will appear here automatically.
-              </div>
+        <!-- Graded price chart -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Graded Price History</span>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-ghost btn-sm chart-range-btn-g active" data-range="all" onclick="setRange('graded','all')">ALL</button>
+              <button class="btn btn-ghost btn-sm chart-range-btn-g" data-range="3m" onclick="setRange('graded','3m')">3M</button>
+              <button class="btn btn-ghost btn-sm chart-range-btn-g" data-range="1m" onclick="setRange('graded','1m')">1M</button>
+              <button class="btn btn-ghost btn-sm chart-range-btn-g" data-range="1w" onclick="setRange('graded','1w')">1W</button>
             </div>
           </div>
-
-          <!-- Stock quick-edit -->
-          <div class="panel" style="margin-top:14px">
-            <div class="panel-header"><span class="panel-title">Stock</span></div>
-            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
-              <div class="form-row">
-                <div class="form-group"><label>Online Stock</label><input type="number" id="f-online" min="0"></div>
-                <div class="form-group"><label>In-Store Stock</label><input type="number" id="f-instore" min="0"></div>
-              </div>
-              <div class="form-row">
-                <div class="form-group"><label>Price ($)</label><input type="number" id="f-price" step="0.01" min="0" oninput="document.getElementById('item-header-price').textContent='$'+(parseFloat(this.value)||0).toFixed(2);updateItemProfit()"></div>
-                <div class="form-group"><label>Price Paid ($)</label><input type="number" id="f-price-paid" step="0.01" min="0" placeholder="0.00" oninput="updateItemProfit()"></div>
-              </div>
-              <div style="min-height:22px;margin-top:-6px;margin-bottom:4px" id="item-profit-display"></div>
-              <div class="form-row">
-                <div class="form-group"><label>Low Stock Alert</label><input type="number" id="f-threshold" min="0"></div>
-              </div>
-            </div>
+          <div class="panel-body" style="position:relative;min-height:160px;display:flex;align-items:center;justify-content:center">
+            <canvas id="graded-chart" style="width:100%;display:none"></canvas>
+            <div id="graded-chart-empty" style="color:var(--muted);font-size:0.85rem;text-align:center">No graded price history yet.</div>
           </div>
         </div>
 
-        <!-- Right: Edit Form -->
-        <div class="item-edit-col">
-          <input type="hidden" id="item-id">
-
-          <div class="panel">
-            <div class="panel-header"><span class="panel-title">Details</span></div>
-            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
-              <div class="form-group"><label>Name *</label><input type="text" id="f-name" oninput="document.getElementById('item-title').textContent=this.value||'—'"></div>
-              <div class="form-group"><label>Set Name</label><input type="text" id="f-set"></div>
-              <div class="form-group"><label>Variant</label><input type="text" id="f-variant"></div>
-              <div class="form-row">
-                <div class="form-group"><label>Category</label>
-                  <select id="f-category">
-                    <option value="singles">Singles</option>
-                    <option value="sealed">Sealed</option>
-                    <option value="graded">Graded</option>
-                  </select>
-                </div>
-                <div class="form-group"><label>Condition</label>
-                  <select id="f-condition">
-                    <option value="NM">NM</option><option value="LP">LP</option>
-                    <option value="MP">MP</option><option value="HP">HP</option>
-                    <option value="DMG">DMG</option>
-                  </select>
-                </div>
-              </div>
+        <!-- Condition prices -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">Market Prices by Condition</span>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span id="cond-prices-status" style="font-size:0.72rem;color:var(--muted)"></span>
+              <button class="btn btn-ghost btn-sm" id="cond-prices-btn" onclick="fetchConditionPrices()">&#8635; Refresh</button>
             </div>
           </div>
-
-          <div class="panel" style="margin-top:12px">
-            <div class="panel-header"><span class="panel-title">Graded Card</span></div>
-            <div class="panel-body" style="display:flex;flex-direction:column;gap:12px">
-              <div class="form-row">
-                <div class="form-group"><label>Grading Co.</label>
-                  <select id="f-grade-company" onchange="updateGradeBadge()">
-                    <option value="">Ungraded</option>
-                    <option value="PSA">PSA</option><option value="BGS">BGS</option>
-                    <option value="CGC">CGC</option><option value="TAG">TAG</option>
-                  </select>
-                </div>
-                <div class="form-group"><label>Grade</label>
-                  <select id="f-grade-num" onchange="updateGradeBadge()">
-                    <option value="">—</option>
-                    <option value="1">1</option><option value="1.5">1.5</option>
-                    <option value="2">2</option><option value="2.5">2.5</option>
-                    <option value="3">3</option><option value="3.5">3.5</option>
-                    <option value="4">4</option><option value="4.5">4.5</option>
-                    <option value="5">5</option><option value="5.5">5.5</option>
-                    <option value="6">6</option><option value="6.5">6.5</option>
-                    <option value="7">7</option><option value="7.5">7.5</option>
-                    <option value="8">8</option><option value="8.5">8.5</option>
-                    <option value="9">9</option><option value="9.5">9.5</option>
-                    <option value="10">10</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel" style="margin-top:12px">
-            <div class="panel-header"><span class="panel-title">Sale Channel</span></div>
-            <div class="panel-body">
-              <div class="form-group">
-                <select id="f-channel">
-                  <option value="both">Online &amp; In-Person</option>
-                  <option value="online">Online Only</option>
-                  <option value="instore">In-Person Only</option>
-                </select>
-              </div>
-            </div>
+          <div class="panel-body">
+            <div id="item-cond-prices"><div style="color:var(--muted);font-size:0.82rem">Loading condition prices...</div></div>
           </div>
         </div>
-
       </div>
+
+      <!-- RIGHT col: market prices -->
+      <div class="item-right-col">
+        <div class="item-right-header">
+          <div class="item-right-label">Market Price</div>
+          <button class="item-dots-btn" onclick="openPdPanel()">&#xB7;&#xB7;&#xB7;</button>
+        </div>
+        <div class="market-price-card">
+          <div class="market-price-cond">Ungraded NM</div>
+          <div class="market-price-val" id="market-nm-price">&#x2014;</div>
+          <div class="market-price-sync" id="market-sync-time"></div>
+          <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px" onclick="syncPrice()">&#8635; Sync Market Price</button>
+        </div>
+        <div class="market-grade-table" id="market-grade-table" style="display:none">
+          <div class="market-grade-label">Graded Market Prices</div>
+          <div id="market-grade-rows"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Product Details slide-out -->
+<div class="pd-overlay hidden" id="pd-overlay" onclick="closePdPanel()"></div>
+<div class="pd-panel hidden" id="pd-panel">
+  <div class="pd-header">
+    <div>
+      <div class="pd-title">Product Details</div>
+      <div class="pd-subtitle" id="pd-subtitle"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <select class="pd-cond-select" id="pd-default-cond">
+        <option value="NM">NM</option><option value="LP">LP</option>
+        <option value="MP">MP</option><option value="DMG">DMG</option>
+      </select>
+      <button class="pd-close" onclick="closePdPanel()">&#x2715;</button>
+    </div>
+  </div>
+  <div class="pd-copies-section" id="pd-copies-section">
+    <div class="pd-copies-header">
+      <div>
+        <span class="pd-copies-label">Your Copies</span>
+        <span class="pd-copies-count" id="pd-copies-count">0</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="addCopy()">+ Add Copy</button>
+    </div>
+    <div id="pd-copies-list"></div>
+  </div>
+  <div class="pd-footer">
+    <div class="pd-total-row"><span>Total copies</span><span id="pd-total-copies">0</span></div>
+    <div class="pd-total-row"><span>Total invested</span><span id="pd-total-invested">&#x2014;</span></div>
+    <div class="pd-total-row"><span>Total value</span><span id="pd-total-value">&#x2014;</span></div>
+    <div class="pd-total-row"><span>Unrealized profit</span><span class="green" id="pd-unrealized">&#x2014;</span></div>
+  </div>
+</div>
+
+<!-- Mark as Sold modal -->
+<div class="sold-modal-overlay hidden" id="sold-modal-overlay">
+  <div class="sold-modal">
+    <div class="sold-modal-header">
+      <div class="sold-modal-title">Mark as Sold</div>
+      <div class="sold-modal-desc">Track the actual sale. Sales recorded here affect your Analytics.</div>
+    </div>
+    <div class="sold-modal-body">
+      <input type="hidden" id="sold-copy-id">
+      <div class="form-row">
+        <div class="form-group"><label>Sold Price per Unit ($)</label><input type="number" id="sold-price" step="0.01" min="0" placeholder="0.00"></div>
+        <div class="form-group"><label>Quantity Sold</label><input type="number" id="sold-qty" value="1" min="1" max="1"></div>
+      </div>
+      <div class="form-group"><label>Date Sold</label><input type="date" id="sold-date"></div>
+      <div class="form-group"><label>Note</label><textarea id="sold-note" rows="2" placeholder="Enter note here"></textarea></div>
+      <button class="sold-confirm-btn" onclick="confirmSold()">&#x2299; Mark as Sold</button>
+    </div>
+    <div class="sold-modal-footer">
+      <button class="btn btn-ghost" style="width:100%" onclick="closeSoldModal()">Cancel</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 <script>
-let itemData = null;
-let priceChart = null;
-let allHistory = [];
-
 const itemId = new URLSearchParams(location.search).get('id');
 if (!itemId) location.href = '/admin/inventory.html';
 
-function updateItemProfit() {
-  const price     = parseFloat(document.getElementById('f-price').value) || 0;
-  const pricePaid = parseFloat(document.getElementById('f-price-paid').value) || 0;
-  const el        = document.getElementById('item-profit-display');
-  if (!el) return;
-  if (!pricePaid) { el.innerHTML = ''; return; }
-  const profit = price - pricePaid;
-  const pct    = Math.round((profit / pricePaid) * 100);
-  const color  = profit >= 0 ? 'var(--green)' : 'var(--red)';
-  const sign   = profit >= 0 ? '+' : '';
-  el.innerHTML = `<span style="color:${color};font-weight:700;font-size:0.82rem">Profit: ${sign}${fmt(profit)} (${sign}${pct}%)</span>`;
-}
+let itemData    = null;
+let copies      = [];
+let priceChart  = null;
+let gradedChart = null;
+let allHistory  = [];
+let _nmPrice    = null;
 
-function updateItemImg(url) {
-  const wrap = document.getElementById('item-img-wrap');
-  if (url) {
-    wrap.innerHTML = `<img src="${url}" alt="Card" class="item-card-img" onerror="this.parentElement.innerHTML='<div class=item-img-placeholder>No Image</div>'">`;
-  } else {
-    wrap.innerHTML = '<div class="item-img-placeholder">No Image</div>';
-  }
-}
-
-function updateGradeBadge() {
-  const co  = document.getElementById('f-grade-company').value;
-  const num = document.getElementById('f-grade-num').value;
-  const display = document.getElementById('item-grade-display');
-  const badge   = document.getElementById('item-grade-badge');
-  if (co && num) {
-    badge.textContent = `${co} ${num}`;
-    display.style.display = 'block';
-  } else {
-    display.style.display = 'none';
-  }
-}
-
-function populateForm(item) {
+// ── Init ──────────────────────────────────────────────────
+(async () => {
+  await initPage('');
+  const [item, history, copiesData] = await Promise.all([
+    API.get('/inventory/' + itemId).catch(() => null),
+    API.get('/inventory/' + itemId + '/history').catch(() => []),
+    API.get('/copies/' + itemId).catch(() => []),
+  ]);
+  if (!item) { showToast('Item not found', 'error'); return; }
   itemData = item;
-  document.getElementById('item-id').value        = item.id;
-  document.getElementById('item-title').textContent = item.name;
-  document.getElementById('item-subtitle').textContent = [item.set_name, item.variant].filter(Boolean).join(' · ');
-  document.getElementById('item-breadcrumb').textContent = `Inventory › ${item.category} › ${item.name}`;
+  copies   = copiesData;
+  populateForm(item);
+  allHistory = history;
+  buildChart(history);
+  buildGradedChart(history);
+  renderLeftPanel();
+  // Fetch condition prices in background
+  API.get('/pricesync/condition-prices/' + itemId).then(function(r) {
+    if (r && r.nm_price) {
+      _nmPrice = r.nm_price;
+      showConditionPrices();
+      document.getElementById('cond-prices-status').textContent = 'Live \xB7 TCGPlayer';
+      document.getElementById('market-nm-price').textContent = fmt(r.nm_price);
+    } else {
+      document.getElementById('item-cond-prices').innerHTML =
+        '<div style="color:var(--muted);font-size:0.82rem">Click Refresh to load condition prices.</div>';
+    }
+  }).catch(function() {
+    document.getElementById('item-cond-prices').innerHTML =
+      '<div style="color:var(--muted);font-size:0.82rem">Click Refresh to load condition prices.</div>';
+  });
+})();
+
+// ── Form population ───────────────────────────────────────
+function populateForm(item) {
+  document.getElementById('item-breadcrumb').textContent = 'Inventory \u203a ' + item.name;
   document.getElementById('item-header-price').textContent = fmt(item.price);
   document.getElementById('f-name').value          = item.name || '';
   document.getElementById('f-set').value           = item.set_name || '';
   document.getElementById('f-variant').value       = item.variant || '';
   document.getElementById('f-category').value      = item.category || 'singles';
-  document.getElementById('f-condition').value     = item.condition || 'NM';
-  document.getElementById('f-price').value         = item.price || '';
-  document.getElementById('f-online').value        = item.online_stock ?? 0;
-  document.getElementById('f-instore').value       = item.instore_stock ?? 0;
-  document.getElementById('f-threshold').value     = item.low_stock_threshold ?? 3;
-  const gradeParts = item.grade ? item.grade.split(' ') : [];
-  document.getElementById('f-grade-company').value = gradeParts[0] || '';
-  document.getElementById('f-grade-num').value     = gradeParts[1] || '';
   document.getElementById('f-channel').value       = item.sale_channel || 'both';
+  document.getElementById('f-price').value         = item.price || '';
   document.getElementById('f-img').value           = item.img_url || '';
-  document.getElementById('f-price-paid').value    = item.price_paid || '';
+  var gp = item.grade ? item.grade.split(' ') : [];
+  document.getElementById('f-grade-company').value = gp[0] || '';
+  document.getElementById('f-grade-num').value     = gp[1] || '';
   updateItemImg(item.img_url);
-  updateGradeBadge();
-  updateItemProfit();
-  const catCls  = item.category === 'graded' ? 'badge-gold' : 'badge-blue';
-  const condCls = { NM:'badge-ok', LP:'badge-low', MP:'badge-orange', DMG:'badge-out' }[item.condition] || 'badge-gray';
-  document.getElementById('item-badges').innerHTML =
-    `<span class="badge ${catCls}">${item.category}</span><span class="badge ${condCls}">${item.condition}</span>`;
-  document.title = `${item.name} — BigBlastToys Admin`;
+  document.title = item.name + ' \u2014 BigBlastToys Admin';
 }
 
-function buildChart(history) {
-  const ctx   = document.getElementById('price-chart');
-  const empty = document.getElementById('chart-empty');
-  if (!history.length) {
-    ctx.style.display   = 'none';
-    empty.style.display = 'block';
-    return;
-  }
-  ctx.style.display   = 'block';
-  empty.style.display = 'none';
-  if (priceChart) priceChart.destroy();
-  priceChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: history.map(h => new Date(h.recorded_at).toLocaleDateString()),
-      datasets: [{
-        label: 'Price',
-        data: history.map(h => parseFloat(h.price)),
-        borderColor: '#00aaff',
-        backgroundColor: 'rgba(0,170,255,0.08)',
-        tension: 0.35,
-        pointRadius: history.length > 30 ? 0 : 4,
-        pointBackgroundColor: '#00aaff',
-        fill: true,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: c => `$${c.parsed.y.toFixed(2)}` } }
-      },
-      scales: {
-        x: { ticks: { color: '#6b7a99', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.04)' } },
-        y: { ticks: { color: '#6b7a99', callback: v => `$${v}` }, grid: { color: 'rgba(255,255,255,0.04)' } }
-      }
+function renderLeftPanel() {
+  if (!itemData) return;
+  document.getElementById('item-left-name').textContent = itemData.name;
+  document.getElementById('item-left-meta').textContent =
+    [itemData.set_name, itemData.variant].filter(Boolean).join(' \xB7 ') || '\u2014';
+  var condMap = { NM:'badge-blue', LP:'badge-low', MP:'badge-orange', HP:'badge-out', DMG:'badge-out' };
+  var condCls = condMap[itemData.condition] || 'badge-gray';
+  var catCls  = itemData.category === 'graded' ? 'badge-gold' : 'badge-blue';
+  document.getElementById('item-left-badges').innerHTML =
+    '<span class="badge ' + condCls + '">' + (itemData.condition || '') + '</span>' +
+    '<span class="badge ' + catCls + '">' + (itemData.category || '') + '</span>';
+  document.getElementById('item-left-price').textContent = fmt(itemData.price);
+  var ownedCopies = copies.filter(function(c) { return c.status === 'owned'; });
+  document.getElementById('item-left-stock').innerHTML = 'Copies in stock: <span>' + ownedCopies.length + '</span>';
+  var profitEl = document.getElementById('item-left-profit');
+  if (ownedCopies.length && itemData.price) {
+    var avgPaid = ownedCopies.reduce(function(s, c) { return s + (parseFloat(c.price_paid) || 0); }, 0) / ownedCopies.length;
+    if (avgPaid > 0) {
+      var profit = parseFloat(itemData.price) - avgPaid;
+      var pct    = Math.round((profit / avgPaid) * 100);
+      var sign   = profit >= 0 ? '+' : '';
+      var color  = profit >= 0 ? 'var(--green)' : 'var(--red)';
+      profitEl.innerHTML = '<span style="color:' + color + '">' + sign + fmt(profit) + ' avg (' + sign + pct + '%)</span>';
+    } else {
+      profitEl.innerHTML = '';
     }
-  });
+  } else {
+    profitEl.innerHTML = '';
+  }
 }
 
-function setRange(range) {
-  document.querySelectorAll('.chart-range-btn').forEach(b => b.classList.toggle('active', b.dataset.range === range));
-  const now = new Date();
-  const cutoff = { '1w': 7, '1m': 30, '3m': 90 }[range];
-  const filtered = cutoff
-    ? allHistory.filter(h => new Date(h.recorded_at) >= new Date(now - cutoff * 864e5))
-    : allHistory;
-  buildChart(filtered);
+function onNameInput(val) {
+  document.getElementById('item-left-name').textContent = val || 'Untitled';
+}
+function onPriceInput(val) {
+  var p = parseFloat(val) || 0;
+  document.getElementById('item-header-price').textContent = fmt(p);
+  document.getElementById('item-left-price').textContent   = fmt(p);
 }
 
+function updateItemImg(url) {
+  var wrap = document.getElementById('item-img-wrap');
+  if (url) {
+    wrap.innerHTML = '<img src="' + url + '" alt="Card" style="width:100%;height:100%;object-fit:contain" onerror="this.parentElement.innerHTML=\'<span class=no-img>No Image</span>\'">';
+  } else {
+    wrap.innerHTML = '<span class="no-img">No Image</span>';
+  }
+}
+
+// ── Save item ─────────────────────────────────────────────
 async function saveItem() {
-  const body = {
-    name:                document.getElementById('f-name').value,
-    set_name:            document.getElementById('f-set').value,
-    variant:             document.getElementById('f-variant').value,
-    category:            document.getElementById('f-category').value,
-    condition:           document.getElementById('f-condition').value,
-    price:               parseFloat(document.getElementById('f-price').value) || 0,
-    online_stock:        parseInt(document.getElementById('f-online').value)   || 0,
-    instore_stock:       parseInt(document.getElementById('f-instore').value)  || 0,
-    low_stock_threshold: parseInt(document.getElementById('f-threshold').value)|| 3,
-    sale_channel:        document.getElementById('f-channel').value || 'both',
-    grade: (() => {
-      const co  = document.getElementById('f-grade-company').value;
-      const num = document.getElementById('f-grade-num').value;
-      return co && num ? `${co} ${num}` : null;
-    })(),
-    img_url:    document.getElementById('f-img').value,
-    price_paid: parseFloat(document.getElementById('f-price-paid').value) || null,
+  var co  = document.getElementById('f-grade-company').value;
+  var num = document.getElementById('f-grade-num').value;
+  var body = {
+    name:          document.getElementById('f-name').value,
+    set_name:      document.getElementById('f-set').value,
+    variant:       document.getElementById('f-variant').value,
+    category:      document.getElementById('f-category').value,
+    condition:     itemData ? (itemData.condition || 'NM') : 'NM',
+    price:         parseFloat(document.getElementById('f-price').value) || 0,
+    sale_channel:  document.getElementById('f-channel').value || 'both',
+    img_url:       document.getElementById('f-img').value,
+    grade:         (co && num) ? co + ' ' + num : null,
+    price_paid:    itemData ? (itemData.price_paid != null ? itemData.price_paid : null) : null,
+    date_acquired: itemData ? (itemData.date_acquired || null) : null,
+    notes:         itemData ? (itemData.notes || null) : null,
+    online_stock:  itemData ? (itemData.online_stock || 0) : 0,
+    instore_stock: itemData ? (itemData.instore_stock || 0) : 0,
+    low_stock_threshold: itemData ? (itemData.low_stock_threshold || 3) : 3,
   };
   try {
-    const updated = await API.put(`/inventory/${itemId}`, body);
+    var updated = await API.put('/inventory/' + itemId, body);
+    itemData = updated;
     populateForm(updated);
+    renderLeftPanel();
     showToast('Changes saved');
   } catch (e) { showToast(e.message, 'error'); }
 }
 
-async function deleteItem() {
-  if (!confirm(`Delete "${itemData?.name}"? This cannot be undone.`)) return;
-  try {
-    await API.delete(`/inventory/${itemId}`);
-    showToast('Item deleted');
-    setTimeout(() => location.href = '/admin/inventory.html', 800);
-  } catch (e) { showToast(e.message, 'error'); }
-}
-
-function duplicateAndRedirect() {
-  sessionStorage.setItem('dup', JSON.stringify({ ...itemData, id: null, online_stock: 0, instore_stock: 0 }));
-  location.href = '/admin/inventory.html?dup=1';
-}
-
+// ── Sync market price ─────────────────────────────────────
 async function syncPrice() {
-  const btn = document.getElementById('sync-btn');
-  btn.textContent = '↻ Syncing...';
-  btn.disabled = true;
+  var btn = document.getElementById('sync-btn');
+  btn.textContent = '\u21bb Syncing...'; btn.disabled = true;
   try {
-    const result = await API.post(`/pricesync/single/${itemId}`, {});
-    showToast(`Price updated: ${fmt(result.old_price)} → ${fmt(result.new_price)}`);
-    const [item, history] = await Promise.all([
-      API.get(`/inventory/${itemId}`),
-      API.get(`/inventory/${itemId}/history`).catch(() => [])
+    var result = await API.post('/pricesync/single/' + itemId, {});
+    showToast('Price: ' + fmt(result.old_price) + ' \u2192 ' + fmt(result.new_price));
+    var arr = await Promise.all([
+      API.get('/inventory/' + itemId),
+      API.get('/inventory/' + itemId + '/history').catch(function() { return []; }),
     ]);
-    populateForm(item);
-    allHistory = history;
-    setRange(document.querySelector('.chart-range-btn.active')?.dataset.range || 'all');
+    itemData   = arr[0];
+    allHistory = arr[1];
+    populateForm(arr[0]);
+    renderLeftPanel();
+    setRange('raw', 'all');
+    var condResult = await API.get('/pricesync/condition-prices/' + itemId).catch(function() { return null; });
+    if (condResult && condResult.nm_price) {
+      _nmPrice = condResult.nm_price;
+      showConditionPrices();
+      document.getElementById('cond-prices-status').textContent = 'Live \xB7 TCGPlayer';
+      document.getElementById('market-nm-price').textContent = fmt(condResult.nm_price);
+    }
+  } catch (e) { showToast(e.message, 'error'); }
+  finally { btn.textContent = '\u21bb Sync Price'; btn.disabled = false; }
+}
+
+// ── Condition prices ──────────────────────────────────────
+async function fetchConditionPrices() {
+  var btn    = document.getElementById('cond-prices-btn');
+  var status = document.getElementById('cond-prices-status');
+  btn.disabled = true; btn.textContent = '\u21bb Refreshing...'; status.textContent = '';
+  try {
+    var result = await API.get('/pricesync/condition-prices/' + itemId);
+    _nmPrice = result.nm_price;
+    showConditionPrices();
+    status.textContent = 'Live \xB7 TCGPlayer';
+    document.getElementById('market-nm-price').textContent = fmt(result.nm_price);
   } catch (e) {
-    showToast(e.message, 'error');
-  } finally {
-    btn.textContent = '↻ Sync Price';
-    btn.disabled = false;
+    status.textContent = 'Not found';
+    document.getElementById('item-cond-prices').innerHTML =
+      '<div style="color:var(--muted);font-size:0.82rem">Could not fetch prices for this card.</div>';
+  } finally { btn.disabled = false; btn.textContent = '\u21bb Refresh'; }
+}
+
+function showConditionPrices() {
+  if (!_nmPrice) return;
+  renderConditionPrices(_nmPrice, 'item-cond-prices', { conditionId: 'f-condition', priceId: 'f-price' });
+  var cond = itemData ? (itemData.condition || 'NM') : 'NM';
+  var pill = document.getElementById('item-cond-prices').querySelector('.cond-price-pill[data-cond="' + cond + '"]');
+  if (pill) pill.classList.add('active');
+}
+
+// ── Charts ────────────────────────────────────────────────
+var CHART_OPTS = {
+  responsive: true,
+  plugins: {
+    legend: { display: false },
+    tooltip: { callbacks: { label: function(c) { return '$' + c.parsed.y.toFixed(2); } } }
+  },
+  scales: {
+    x: { ticks: { color: '#6b7a99', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+    y: { ticks: { color: '#6b7a99', callback: function(v) { return '$' + v; } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+  }
+};
+
+function buildChart(history) {
+  var ctx   = document.getElementById('price-chart');
+  var empty = document.getElementById('chart-empty');
+  if (!history.length) { ctx.style.display = 'none'; empty.style.display = 'block'; return; }
+  ctx.style.display = 'block'; empty.style.display = 'none';
+  if (priceChart) priceChart.destroy();
+  priceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: history.map(function(h) { return new Date(h.recorded_at).toLocaleDateString(); }),
+      datasets: [{
+        data: history.map(function(h) { return parseFloat(h.price); }),
+        borderColor: '#00aaff', backgroundColor: 'rgba(0,170,255,0.08)',
+        tension: 0.35, pointRadius: history.length > 30 ? 0 : 4, fill: true
+      }]
+    },
+    options: CHART_OPTS
+  });
+}
+
+function buildGradedChart(history) {
+  var ctx   = document.getElementById('graded-chart');
+  var empty = document.getElementById('graded-chart-empty');
+  if (!history.length || !itemData || !itemData.grade) {
+    ctx.style.display = 'none'; empty.style.display = 'block';
+    empty.textContent = (itemData && itemData.grade) ? 'No graded price history yet.' : 'Add a grade to track graded prices.';
+    return;
+  }
+  ctx.style.display = 'block'; empty.style.display = 'none';
+  if (gradedChart) gradedChart.destroy();
+  gradedChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: history.map(function(h) { return new Date(h.recorded_at).toLocaleDateString(); }),
+      datasets: [{
+        data: history.map(function(h) { return parseFloat(h.price); }),
+        borderColor: '#34d399', backgroundColor: 'rgba(52,211,153,0.08)',
+        tension: 0.35, pointRadius: history.length > 30 ? 0 : 4, fill: true
+      }]
+    },
+    options: CHART_OPTS
+  });
+}
+
+function setRange(chart, range) {
+  var cls = chart === 'raw' ? '.chart-range-btn' : '.chart-range-btn-g';
+  document.querySelectorAll(cls).forEach(function(b) {
+    b.classList.toggle('active', b.dataset.range === range);
+  });
+  var cutoffs = { '1w': 7, '1m': 30, '3m': 90 };
+  var cutoff  = cutoffs[range];
+  var now = new Date();
+  var filtered = cutoff
+    ? allHistory.filter(function(h) { return new Date(h.recorded_at) >= new Date(now - cutoff * 864e5); })
+    : allHistory;
+  if (chart === 'raw') buildChart(filtered);
+  else buildGradedChart(filtered);
+}
+
+// ── Product Details panel ─────────────────────────────────
+function openPdPanel() {
+  if (!itemData) return;
+  document.getElementById('pd-subtitle').textContent = itemData.name;
+  renderCopies();
+  document.getElementById('pd-overlay').classList.remove('hidden');
+  document.getElementById('pd-panel').classList.remove('hidden');
+}
+
+function closePdPanel() {
+  document.getElementById('pd-overlay').classList.add('hidden');
+  document.getElementById('pd-panel').classList.add('hidden');
+}
+
+function renderCopies() {
+  var owned = copies.filter(function(c) { return c.status === 'owned'; });
+  var sold  = copies.filter(function(c) { return c.status === 'sold'; });
+  document.getElementById('pd-copies-count').textContent = owned.length;
+
+  var price         = parseFloat(itemData ? itemData.price : 0) || 0;
+  var totalInvested = owned.reduce(function(s, c) { return s + (parseFloat(c.price_paid) || 0); }, 0);
+  var totalValue    = owned.length * price;
+  var unrealized    = totalValue - totalInvested;
+  document.getElementById('pd-total-copies').textContent   = owned.length;
+  document.getElementById('pd-total-invested').textContent = fmt(totalInvested);
+  document.getElementById('pd-total-value').textContent    = fmt(totalValue);
+  var upEl = document.getElementById('pd-unrealized');
+  upEl.textContent = (unrealized >= 0 ? '+' : '') + fmt(unrealized);
+  upEl.style.color = unrealized >= 0 ? 'var(--green)' : 'var(--red)';
+
+  var html = '';
+  owned.forEach(function(copy, idx) {
+    var paid   = parseFloat(copy.price_paid) || 0;
+    var profit = price - paid;
+    var pct    = paid > 0 ? Math.round((profit / paid) * 100) : null;
+    var sign   = profit >= 0 ? '+' : '';
+    var condCls   = 'copy-cond-' + copy.condition;
+    var profitCls = profit >= 0 ? 'copy-profit-pill' : 'copy-profit-pill loss';
+    var acq = copy.date_acquired
+      ? new Date(copy.date_acquired).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'2-digit' })
+      : '\u2014';
+    var profitBadge = (paid > 0 && pct !== null)
+      ? '<div class="' + profitCls + '">' + sign + fmt(profit) + ' (' + sign + pct + '%)</div>'
+      : '';
+    html +=
+      '<div class="copy-card" id="copy-' + copy.id + '">' +
+        '<div class="copy-card-top">' +
+          '<span class="copy-card-num">Copy #' + (idx + 1) + '</span>' +
+          '<span class="copy-cond-badge ' + condCls + '">' + copy.condition + '</span>' +
+        '</div>' +
+        '<div class="copy-data-grid">' +
+          '<div class="copy-data-field"><label>Paid</label><span>' + (paid > 0 ? fmt(paid) : '\u2014') + '</span></div>' +
+          '<div class="copy-data-field"><label>Acquired</label><span>' + acq + '</span></div>' +
+          '<div class="copy-data-field"><label>Value</label><span class="val-green">' + fmt(price) + '</span></div>' +
+        '</div>' +
+        profitBadge +
+        '<div class="copy-actions">' +
+          '<button class="copy-sell-btn" onclick="openSoldModal(\'' + copy.id + '\')">Mark as Sold</button>' +
+          '<button class="copy-edit-btn" onclick="toggleEditCopy(\'' + copy.id + '\')">Edit</button>' +
+          '<button class="copy-edit-btn" onclick="deleteCopy(\'' + copy.id + '\')" style="color:var(--red)">\u2715</button>' +
+        '</div>' +
+        '<div class="copy-edit-form" id="edit-form-' + copy.id + '" style="display:none">' +
+          '<div class="copy-edit-row">' +
+            '<div class="form-group"><label>Condition</label>' +
+              '<select id="ef-cond-' + copy.id + '">' +
+                '<option value="NM"' + (copy.condition === 'NM' ? ' selected' : '') + '>NM</option>' +
+                '<option value="LP"'  + (copy.condition === 'LP'  ? ' selected' : '') + '>LP</option>' +
+                '<option value="MP"'  + (copy.condition === 'MP'  ? ' selected' : '') + '>MP</option>' +
+                '<option value="DMG"' + (copy.condition === 'DMG' ? ' selected' : '') + '>DMG</option>' +
+              '</select>' +
+            '</div>' +
+            '<div class="form-group"><label>Price Paid ($)</label>' +
+              '<input type="number" id="ef-paid-' + copy.id + '" step="0.01" value="' + (copy.price_paid != null ? copy.price_paid : '') + '">' +
+            '</div>' +
+          '</div>' +
+          '<div class="form-group"><label>Date Acquired</label>' +
+            '<input type="date" id="ef-date-' + copy.id + '" value="' + (copy.date_acquired ? copy.date_acquired.slice(0, 10) : '') + '">' +
+          '</div>' +
+          '<div class="form-group"><label>Notes</label>' +
+            '<input type="text" id="ef-notes-' + copy.id + '" value="' + (copy.notes || '') + '">' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;margin-top:4px">' +
+            '<button class="btn btn-primary btn-sm" onclick="saveCopyEdit(\'' + copy.id + '\')">Save</button>' +
+            '<button class="btn btn-ghost btn-sm" onclick="toggleEditCopy(\'' + copy.id + '\')">Cancel</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  });
+  if (sold.length) {
+    html += '<div style="font-size:0.72rem;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">' +
+      sold.length + ' sold cop' + (sold.length === 1 ? 'y' : 'ies') + ' not shown</div>';
+  }
+  document.getElementById('pd-copies-list').innerHTML = html;
+}
+
+function toggleEditCopy(copyId) {
+  var form = document.getElementById('edit-form-' + copyId);
+  if (form.style.display === 'none') {
+    form.style.display = 'flex';
+    form.style.flexDirection = 'column';
+  } else {
+    form.style.display = 'none';
   }
 }
 
-(async () => {
-  await initPage('Inventory');
-  const [item, history] = await Promise.all([
-    API.get(`/inventory/${itemId}`).catch(() => null),
-    API.get(`/inventory/${itemId}/history`).catch(() => [])
-  ]);
-  if (!item) { showToast('Item not found', 'error'); return; }
-  populateForm(item);
-  allHistory = history;
-  buildChart(history);
-})();
+async function addCopy() {
+  var cond  = document.getElementById('pd-default-cond').value;
+  var today = new Date().toISOString().slice(0, 10);
+  try {
+    var copy = await API.post('/copies/' + itemId, { condition: cond, date_acquired: today });
+    copies.push(copy);
+    renderCopies();
+    renderLeftPanel();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function saveCopyEdit(copyId) {
+  var paidVal = document.getElementById('ef-paid-' + copyId).value;
+  var body = {
+    condition:     document.getElementById('ef-cond-' + copyId).value,
+    price_paid:    paidVal !== '' ? parseFloat(paidVal) : null,
+    date_acquired: document.getElementById('ef-date-' + copyId).value || null,
+    notes:         document.getElementById('ef-notes-' + copyId).value || null,
+  };
+  try {
+    var updated = await API.put('/copies/' + copyId, body);
+    copies = copies.map(function(c) { return c.id === copyId ? updated : c; });
+    renderCopies();
+    renderLeftPanel();
+    showToast('Copy saved');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function deleteCopy(copyId) {
+  if (!confirm('Delete this copy? This cannot be undone.')) return;
+  try {
+    await API.delete('/copies/' + copyId);
+    copies = copies.filter(function(c) { return c.id !== copyId; });
+    renderCopies();
+    renderLeftPanel();
+    showToast('Copy deleted');
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ── Mark as Sold modal ────────────────────────────────────
+function openSoldModal(copyId) {
+  document.getElementById('sold-copy-id').value = copyId;
+  document.getElementById('sold-price').value   = itemData ? (itemData.price || '') : '';
+  document.getElementById('sold-qty').value     = 1;
+  document.getElementById('sold-date').value    = new Date().toISOString().slice(0, 10);
+  document.getElementById('sold-note').value    = '';
+  document.getElementById('sold-modal-overlay').classList.remove('hidden');
+}
+
+function closeSoldModal() {
+  document.getElementById('sold-modal-overlay').classList.add('hidden');
+}
+
+async function confirmSold() {
+  var copyId    = document.getElementById('sold-copy-id').value;
+  var priceVal  = document.getElementById('sold-price').value;
+  var body = {
+    sold_price: priceVal !== '' ? parseFloat(priceVal) : null,
+    sold_date:  document.getElementById('sold-date').value || null,
+    notes:      document.getElementById('sold-note').value || null,
+  };
+  try {
+    var updated = await API.post('/copies/' + copyId + '/sell', body);
+    copies = copies.map(function(c) { return c.id === copyId ? updated : c; });
+    closeSoldModal();
+    renderCopies();
+    renderLeftPanel();
+    showToast('Marked as sold! Sale recorded in Analytics.');
+  } catch (e) { showToast(e.message, 'error'); }
+}
 </script>
 </body>
 </html>
