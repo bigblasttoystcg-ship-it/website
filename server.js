@@ -39,6 +39,8 @@ app.use('/api/pokemoncards', require('./api/pokemoncards'));
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS variant TEXT;
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS sale_channel TEXT DEFAULT 'both';
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS price_paid NUMERIC(10,2) DEFAULT NULL;
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS date_acquired DATE DEFAULT NULL;
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT NULL;
       CREATE TABLE IF NOT EXISTS price_history (
         id SERIAL PRIMARY KEY,
         inventory_id TEXT NOT NULL,
@@ -56,7 +58,42 @@ app.use('/api/pokemoncards', require('./api/pokemoncards'));
         updated_at TIMESTAMPTZ DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS pokemon_cards_name_idx ON pokemon_cards (name text_pattern_ops);
+      CREATE TABLE IF NOT EXISTS copies (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        inventory_id TEXT NOT NULL,
+        condition TEXT NOT NULL DEFAULT 'NM',
+        price_paid NUMERIC(10,2),
+        date_acquired DATE,
+        status TEXT NOT NULL DEFAULT 'owned',
+        sold_price NUMERIC(10,2),
+        sold_date DATE,
+        notes TEXT,
+        created_at TIMESTAMPTZ DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS copies_inventory_id_idx ON copies (inventory_id);
+      CREATE INDEX IF NOT EXISTS copies_status_idx ON copies (status);
     `);
+
+    // One-time migration: seed copies from existing inventory stock counts
+    const { rows: unmigrated } = await pool.query(`
+      SELECT id::text, condition, price_paid, date_acquired,
+             COALESCE(online_stock, 0) + COALESCE(instore_stock, 0) AS total_stock
+      FROM inventory
+      WHERE COALESCE(online_stock, 0) + COALESCE(instore_stock, 0) > 0
+        AND NOT EXISTS (SELECT 1 FROM copies WHERE copies.inventory_id = id::text)
+    `);
+    for (const item of unmigrated) {
+      const count = parseInt(item.total_stock, 10);
+      for (let j = 0; j < count; j++) {
+        await pool.query(
+          `INSERT INTO copies (inventory_id, condition, price_paid, date_acquired, status)
+           VALUES ($1, $2, $3, $4, 'owned')`,
+          [item.id, item.condition || 'NM', item.price_paid || null, item.date_acquired || null]
+        );
+      }
+    }
+    if (unmigrated.length) console.log(`Migrated ${unmigrated.length} inventory items to copies`);
+
     console.log('DB migration OK');
   } catch (err) {
     console.error('DB migration error:', err.message);
