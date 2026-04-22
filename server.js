@@ -80,7 +80,7 @@ app.use('/api/pokemoncards', require('./api/pokemoncards'));
              COALESCE(online_stock, 0) + COALESCE(instore_stock, 0) AS total_stock
       FROM inventory
       WHERE COALESCE(online_stock, 0) + COALESCE(instore_stock, 0) > 0
-        AND NOT EXISTS (SELECT 1 FROM copies WHERE copies.inventory_id = id::text)
+        AND NOT EXISTS (SELECT 1 FROM copies WHERE copies.inventory_id = inventory.id::text)
     `);
     for (const item of unmigrated) {
       const count = parseInt(item.total_stock, 10);
@@ -88,7 +88,7 @@ app.use('/api/pokemoncards', require('./api/pokemoncards'));
         await pool.query(
           `INSERT INTO copies (inventory_id, condition, price_paid, date_acquired, status)
            VALUES ($1, $2, $3, $4, 'owned')`,
-          [item.id, item.condition || 'NM', item.price_paid || null, item.date_acquired || null]
+          [item.id, item.condition || 'NM', item.price_paid ?? null, item.date_acquired ?? null]
         );
       }
     }
