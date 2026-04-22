@@ -61,7 +61,7 @@ router.post('/:copyId/sell', requireAuth, async (req, res) => {
 
     // Record in orders + order_items so Analytics picks it up
     try {
-      const price = parseFloat(sold_price) || 0;
+      const price = parseFloat(sold_price) || 0; // parseFloat returns NaN on bad input; || 0 is correct here
       const { rows: orders } = await req.db.query(
         `INSERT INTO orders (customer_name, channel, status, total)
          VALUES ('Walk-in', 'instore', 'fulfilled', $1) RETURNING *`,
