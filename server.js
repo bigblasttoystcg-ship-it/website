@@ -29,6 +29,7 @@ app.use('/api/import',    require('./api/import'));
 app.use('/api/sales',     require('./api/sales'));
 app.use('/api/pricesync',    require('./api/pricesync'));
 app.use('/api/pokemoncards', require('./api/pokemoncards'));
+app.use('/api/copies',      require('./api/copies'));
 
 // Auto-migrate: ensure all columns exist (safe to re-run)
 (async () => {
