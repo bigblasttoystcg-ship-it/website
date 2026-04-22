@@ -120,7 +120,7 @@ async function initPage(title) {
   const user = await requireAuth();
   if (!user) return null;
   renderSidebar(user);
-  if (title) document.getElementById('page-title').textContent = title;
+  if (title) { const el = document.getElementById('page-title'); if (el) el.textContent = title; }
   return user;
 }
 
@@ -279,4 +279,49 @@ function resetCardPicker() {
   clearTimeout(_pickerTimer);
   const el = document.getElementById('card-picker');
   if (el) { el.innerHTML = ''; delete el.dataset.searched; }
+}
+
+// ── Condition price helpers ───────────────────────────────
+// Standard TCGPlayer condition multipliers (NM = market price)
+const CONDITION_MULTIPLIERS = { NM: 1.0, LP: 0.75, MP: 0.50, HP: 0.30, DMG: 0.15 };
+const CONDITION_BADGE_CLASS  = { NM: 'badge-ok', LP: 'badge-low', MP: 'badge-orange', HP: 'badge-out', DMG: 'badge-out' };
+
+// Render condition price pills into containerId.
+// opts.conditionId — select to update on click
+// opts.priceId     — number input to update on click
+function renderConditionPrices(nmPrice, containerId, opts = {}) {
+  const el = document.getElementById(containerId);
+  if (!el || !nmPrice) return;
+  el.innerHTML = `
+    <div class="cond-prices-label">Market prices by condition <span style="color:var(--muted);font-size:0.7rem">(TCGPlayer NM ${fmt(nmPrice)})</span></div>
+    <div class="cond-prices-row">
+      ${Object.entries(CONDITION_MULTIPLIERS).map(([cond, mult]) => {
+        const price = (nmPrice * mult).toFixed(2);
+        return `<button class="cond-price-pill" data-cond="${cond}" data-price="${price}"
+          onclick="selectConditionPrice(this,'${opts.conditionId || ''}','${opts.priceId || ''}')"
+          title="Set condition to ${cond} and price to $${price}">
+          <span class="cond-pill-label">${cond}</span>
+          <span class="cond-pill-price">$${price}</span>
+        </button>`;
+      }).join('')}
+    </div>`;
+}
+
+function selectConditionPrice(btn, conditionId, priceId) {
+  const cond  = btn.dataset.cond;
+  const price = btn.dataset.price;
+  if (conditionId) {
+    const condEl = document.getElementById(conditionId);
+    if (condEl) condEl.value = cond;
+  }
+  if (priceId) {
+    const priceEl = document.getElementById(priceId);
+    if (priceEl) {
+      priceEl.value = price;
+      priceEl.dispatchEvent(new Event('input'));
+    }
+  }
+  // Highlight selected pill
+  btn.closest('.cond-prices-row')?.querySelectorAll('.cond-price-pill').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
 }
