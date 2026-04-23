@@ -27,9 +27,32 @@ function fetchAPI(url) {
     https.get(url, options, res => {
       let data = '';
       res.on('data', chunk => data += chunk);
-      res.on('end', () => { try { resolve(JSON.parse(data)); } catch (e) { reject(e); } });
+      res.on('end', () => {
+        if (data.trim().toLowerCase().startsWith('throttled')) {
+          return reject(new Error('THROTTLED'));
+        }
+        try { resolve(JSON.parse(data)); }
+        catch (e) { reject(new Error('Pokemon TCG API returned invalid response')); }
+      });
     }).on('error', reject);
   });
+}
+
+// Fetch with automatic retry on throttle (exponential backoff: 3s, 6s, 12s)
+async function fetchAPIWithRetry(url, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await fetchAPI(url);
+    } catch (err) {
+      if (err.message === 'THROTTLED' && attempt < retries - 1) {
+        const wait = 3000 * Math.pow(2, attempt); // 3s, 6s, 12s
+        console.log(`Pokemon TCG API throttled — waiting ${wait / 1000}s before retry ${attempt + 2}/${retries}`);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 function extractVariants(prices) {
@@ -170,7 +193,7 @@ async function runFullSync(db) {
     const pages = Math.ceil(syncStatus.total / 250);
 
     for (let page = 1; page <= pages; page++) {
-      const data = await fetchAPI(
+      const data = await fetchAPIWithRetry(
         `https://api.pokemontcg.io/v2/cards?page=${page}&pageSize=250&select=id,name,set,rarity,images,tcgplayer`
       );
       for (const c of (data.data || [])) {
@@ -186,7 +209,7 @@ async function runFullSync(db) {
         );
         syncStatus.processed++;
       }
-      await new Promise(r => setTimeout(r, 120)); // respect rate limits
+      await new Promise(r => setTimeout(r, 400)); // respect rate limits
     }
     syncStatus.running = false;
     syncStatus.lastSync = new Date().toISOString();
@@ -205,7 +228,7 @@ async function runPriceRefresh(db) {
     const pages = Math.ceil(syncStatus.total / 250);
 
     for (let page = 1; page <= pages; page++) {
-      const data = await fetchAPI(
+      const data = await fetchAPIWithRetry(
         `https://api.pokemontcg.io/v2/cards?page=${page}&pageSize=250&select=id,tcgplayer`
       );
       for (const c of (data.data || [])) {
@@ -215,7 +238,7 @@ async function runPriceRefresh(db) {
         );
         syncStatus.processed++;
       }
-      await new Promise(r => setTimeout(r, 120));
+      await new Promise(r => setTimeout(r, 400));
     }
     syncStatus.running = false;
     syncStatus.lastSync = new Date().toISOString();
