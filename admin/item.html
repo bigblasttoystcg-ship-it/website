@@ -505,10 +505,15 @@ function renderCopies() {
   var sold  = copies.filter(function(c) { return c.status === 'sold'; });
   document.getElementById('pd-copies-count').textContent = owned.length;
 
-  var price         = parseFloat(itemData ? itemData.price : 0) || 0;
+  // NM base price: use live market price if available, otherwise fall back to selling price
+  var nmBase = parseFloat(_nmPrice || (itemData ? itemData.price : 0)) || 0;
+  var COND_MULT = { NM: 1.0, LP: 0.75, MP: 0.50, HP: 0.30, DMG: 0.15 };
+
   var totalInvested = owned.reduce(function(s, c) { return s + (parseFloat(c.price_paid) || 0); }, 0);
-  var totalValue    = owned.length * price;
-  var unrealized    = totalValue - totalInvested;
+  var totalValue    = owned.reduce(function(s, c) {
+    return s + nmBase * (COND_MULT[c.condition] || 1.0);
+  }, 0);
+  var unrealized = totalValue - totalInvested;
   document.getElementById('pd-total-copies').textContent   = owned.length;
   document.getElementById('pd-total-invested').textContent = fmt(totalInvested);
   document.getElementById('pd-total-value').textContent    = fmt(totalValue);
@@ -518,10 +523,11 @@ function renderCopies() {
 
   var html = '';
   owned.forEach(function(copy, idx) {
-    var paid   = parseFloat(copy.price_paid) || 0;
-    var profit = price - paid;
-    var pct    = paid > 0 ? Math.round((profit / paid) * 100) : null;
-    var sign   = profit >= 0 ? '+' : '';
+    var condValue = nmBase * (COND_MULT[copy.condition] || 1.0);
+    var paid      = parseFloat(copy.price_paid) || 0;
+    var profit    = condValue - paid;
+    var pct       = paid > 0 ? Math.round((profit / paid) * 100) : null;
+    var sign      = profit >= 0 ? '+' : '';
     var condCls   = 'copy-cond-' + copy.condition;
     var profitCls = profit >= 0 ? 'copy-profit-pill' : 'copy-profit-pill loss';
     var acq = copy.date_acquired
@@ -539,7 +545,7 @@ function renderCopies() {
         '<div class="copy-data-grid">' +
           '<div class="copy-data-field"><label>Paid</label><span>' + (paid > 0 ? fmt(paid) : '\u2014') + '</span></div>' +
           '<div class="copy-data-field"><label>Acquired</label><span>' + acq + '</span></div>' +
-          '<div class="copy-data-field"><label>Value</label><span class="val-green">' + fmt(price) + '</span></div>' +
+          '<div class="copy-data-field"><label>Value</label><span class="val-green">' + fmt(condValue) + '</span></div>' +
         '</div>' +
         profitBadge +
         '<div class="copy-actions">' +
