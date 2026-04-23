@@ -173,7 +173,7 @@
     <div style="display:flex;align-items:center;gap:8px">
       <select class="pd-cond-select" id="pd-default-cond">
         <option value="NM">NM</option><option value="LP">LP</option>
-        <option value="MP">MP</option><option value="DMG">DMG</option>
+        <option value="MP">MP</option><option value="HP">HP</option><option value="DMG">DMG</option>
       </select>
       <button class="pd-close" onclick="closePdPanel()">&#x2715;</button>
     </div>
@@ -557,9 +557,10 @@ function renderCopies() {
           '<div class="copy-edit-row">' +
             '<div class="form-group"><label>Condition</label>' +
               '<select id="ef-cond-' + copy.id + '">' +
-                '<option value="NM"' + (copy.condition === 'NM' ? ' selected' : '') + '>NM</option>' +
+                '<option value="NM"'  + (copy.condition === 'NM'  ? ' selected' : '') + '>NM</option>' +
                 '<option value="LP"'  + (copy.condition === 'LP'  ? ' selected' : '') + '>LP</option>' +
                 '<option value="MP"'  + (copy.condition === 'MP'  ? ' selected' : '') + '>MP</option>' +
+                '<option value="HP"'  + (copy.condition === 'HP'  ? ' selected' : '') + '>HP</option>' +
                 '<option value="DMG"' + (copy.condition === 'DMG' ? ' selected' : '') + '>DMG</option>' +
               '</select>' +
             '</div>' +

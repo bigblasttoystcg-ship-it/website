@@ -515,6 +515,7 @@ tr:hover td { background: rgba(0,170,255,0.03); cursor: pointer; }
 .copy-cond-NM  { background: rgba(0,170,255,0.15);  color: var(--blue); }
 .copy-cond-LP  { background: rgba(251,191,36,0.15); color: var(--yellow); }
 .copy-cond-MP  { background: rgba(249,115,22,0.15); color: #f97316; }
+.copy-cond-HP  { background: rgba(220,38,38,0.15);  color: #e05252; }
 .copy-cond-DMG { background: rgba(239,68,68,0.15);  color: var(--red); }
 .copy-data-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 8px; }
 .copy-data-field label { font-size: 0.62rem; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 2px; }
