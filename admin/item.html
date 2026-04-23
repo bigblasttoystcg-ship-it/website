@@ -368,22 +368,24 @@ async function syncPrice() {
   try {
     var result = await API.post('/pricesync/single/' + itemId, {});
     showToast('Price: ' + fmt(result.old_price) + ' \u2192 ' + fmt(result.new_price));
+    // Reload item (now has fresh condition prices saved by sync) + history
     var arr = await Promise.all([
       API.get('/inventory/' + itemId),
       API.get('/inventory/' + itemId + '/history').catch(function() { return []; }),
     ]);
     itemData   = arr[0];
     allHistory = arr[1];
+    _nmPrice   = arr[0].price_nm || null;
     populateForm(arr[0]);
     renderLeftPanel();
     setRange('raw', 'all');
-    var condResult = await API.get('/pricesync/condition-prices/' + itemId).catch(function() { return null; });
-    if (condResult && condResult.nm_price) {
-      _nmPrice = condResult.nm_price;
+    if (arr[0].price_nm) {
       showConditionPrices();
       document.getElementById('cond-prices-status').textContent = 'Live \xB7 TCGPlayer';
-      document.getElementById('market-nm-price').textContent = fmt(condResult.nm_price);
+      document.getElementById('market-nm-price').textContent = fmt(arr[0].price_nm);
     }
+    // Refresh copies panel if open so values update immediately
+    if (!document.getElementById('pd-panel').classList.contains('hidden')) renderCopies();
   } catch (e) { showToast(e.message, 'error'); }
   finally { btn.textContent = '\u21bb Sync Price'; btn.disabled = false; }
 }
@@ -396,9 +398,19 @@ async function fetchConditionPrices() {
   try {
     var result = await API.get('/pricesync/condition-prices/' + itemId);
     _nmPrice = result.nm_price;
+    // Merge fresh condition prices into itemData so renderCopies picks them up
+    if (itemData && result.prices) {
+      itemData.price_nm  = result.prices.NM;
+      itemData.price_lp  = result.prices.LP;
+      itemData.price_mp  = result.prices.MP;
+      itemData.price_hp  = result.prices.HP;
+      itemData.price_dmg = result.prices.DMG;
+    }
     showConditionPrices();
     status.textContent = 'Live \xB7 TCGPlayer';
     document.getElementById('market-nm-price').textContent = fmt(result.nm_price);
+    // Refresh copies panel if open
+    if (!document.getElementById('pd-panel').classList.contains('hidden')) renderCopies();
   } catch (e) {
     status.textContent = 'Not found';
     document.getElementById('item-cond-prices').innerHTML =
@@ -505,13 +517,23 @@ function renderCopies() {
   var sold  = copies.filter(function(c) { return c.status === 'sold'; });
   document.getElementById('pd-copies-count').textContent = owned.length;
 
-  // NM base price: use live market price if available, otherwise fall back to selling price
-  var nmBase = parseFloat(_nmPrice || (itemData ? itemData.price : 0)) || 0;
-  var COND_MULT = { NM: 1.0, LP: 0.75, MP: 0.50, HP: 0.30, DMG: 0.15 };
+  // Per-condition prices from DB (set by pricesync). Fall back to selling price for NM if not yet synced.
+  var condPrices = {
+    NM:  parseFloat((itemData && itemData.price_nm)  || _nmPrice || (itemData && itemData.price) || 0),
+    LP:  parseFloat((itemData && itemData.price_lp)  || 0),
+    MP:  parseFloat((itemData && itemData.price_mp)  || 0),
+    HP:  parseFloat((itemData && itemData.price_hp)  || 0),
+    DMG: parseFloat((itemData && itemData.price_dmg) || 0),
+  };
+  // If condition prices haven't been synced yet, fall back to NM * multipliers
+  if (!condPrices.LP) {
+    var nm = condPrices.NM;
+    condPrices = { NM: nm, LP: +(nm*0.75).toFixed(2), MP: +(nm*0.50).toFixed(2), HP: +(nm*0.30).toFixed(2), DMG: +(nm*0.15).toFixed(2) };
+  }
 
   var totalInvested = owned.reduce(function(s, c) { return s + (parseFloat(c.price_paid) || 0); }, 0);
   var totalValue    = owned.reduce(function(s, c) {
-    return s + nmBase * (COND_MULT[c.condition] || 1.0);
+    return s + (condPrices[c.condition] || condPrices.NM);
   }, 0);
   var unrealized = totalValue - totalInvested;
   document.getElementById('pd-total-copies').textContent   = owned.length;
@@ -523,7 +545,7 @@ function renderCopies() {
 
   var html = '';
   owned.forEach(function(copy, idx) {
-    var condValue = nmBase * (COND_MULT[copy.condition] || 1.0);
+    var condValue = condPrices[copy.condition] || condPrices.NM;
     var paid      = parseFloat(copy.price_paid) || 0;
     var profit    = condValue - paid;
     var pct       = paid > 0 ? Math.round((profit / paid) * 100) : null;

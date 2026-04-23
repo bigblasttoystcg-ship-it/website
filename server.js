@@ -42,6 +42,12 @@ app.use('/api/copies',      require('./api/copies'));
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS price_paid NUMERIC(10,2) DEFAULT NULL;
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS date_acquired DATE DEFAULT NULL;
       ALTER TABLE inventory ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT NULL;
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS price_nm NUMERIC(10,2);
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS price_lp NUMERIC(10,2);
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS price_mp NUMERIC(10,2);
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS price_hp NUMERIC(10,2);
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS price_dmg NUMERIC(10,2);
+      ALTER TABLE inventory ADD COLUMN IF NOT EXISTS prices_synced_at TIMESTAMPTZ;
       CREATE TABLE IF NOT EXISTS price_history (
         id SERIAL PRIMARY KEY,
         inventory_id TEXT NOT NULL,
