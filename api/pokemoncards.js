@@ -58,7 +58,7 @@ async function fetchAPIWithRetry(url, retries = 3) {
 function extractVariants(prices) {
   if (!prices) return [];
   return Object.entries(prices)
-    .map(([key, val]) => ({ key, label: VARIANT_LABELS[key] || key, market: val?.market ?? val?.mid ?? null, mid: val?.mid ?? null, low: val?.low ?? null, high: val?.high ?? null }))
+    .map(([key, val]) => ({ key, label: VARIANT_LABELS[key] || key, market: val?.market ?? val?.mid ?? null, low: val?.low ?? null, high: val?.high ?? null }))
     .filter(v => v.market !== null);
 }
 

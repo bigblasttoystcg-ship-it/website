@@ -421,7 +421,7 @@ function openModal(item = null) {
     if (card.variant) document.getElementById('f-variant').value = card.variant;
     if (card.market_price) {
       _modalNmPrice    = parseFloat(card.market_price);
-      _modalCondPrices = _computeCondPrices(card.market_price, card.market_mid, card.market_low);
+      _modalCondPrices = _computeCondPrices(card.market_price);
       const cond = document.getElementById('f-condition').value;
       document.getElementById('f-price').value = (_modalCondPrices[cond] ?? _modalNmPrice).toFixed(2);
       updateProfitDisplay();

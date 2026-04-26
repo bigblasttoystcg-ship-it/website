@@ -66,37 +66,27 @@ function extractMarketPrice(tcgplayer) {
   return null;
 }
 
-// Extract per-condition prices using TCGPlayer's actual low/mid/market data points.
-// TCGPlayer doesn't expose per-condition prices directly, but:
-//   market = NM (what NM cards actually trade at)
-//   mid    = MP range (middle of all listed prices)
-//   low    = DMG floor (cheapest card listed, usually heavily damaged)
-// LP and HP are interpolated between those three real data points.
+// Condition multipliers matching TCGPlayer's standard condition tiers (applied to NM market price).
+// The Pokemon TCG API has no per-condition prices, so we use industry-standard percentages.
+const CONDITION_MULTIPLIERS = { NM: 1.0, LP: 0.80, MP: 0.60, HP: 0.40, DMG: 0.25 };
+
 function extractConditionPrices(tcgplayer) {
   if (!tcgplayer?.prices) return null;
   const variants = ['holofoil', 'reverseHolofoil', 'normal', '1stEditionHolofoil', 'unlimitedHolofoil'];
-  let best = null;
+  let nmPrice = null;
   for (const v of variants) {
-    if (tcgplayer.prices[v]?.market) { best = tcgplayer.prices[v]; break; }
+    if (tcgplayer.prices[v]?.market) { nmPrice = tcgplayer.prices[v].market; break; }
   }
-  if (!best) {
+  if (!nmPrice) {
     for (const v of Object.values(tcgplayer.prices)) {
-      if (v?.market) { best = v; break; }
+      if (v?.market) { nmPrice = v.market; break; }
     }
   }
-  if (!best) return null;
+  if (!nmPrice) return null;
 
-  const nm  = parseFloat(best.market.toFixed(2));
-  const low = best.low ? parseFloat(best.low.toFixed(2))  : parseFloat((nm * 0.15).toFixed(2));
-  const mid = best.mid ? parseFloat(best.mid.toFixed(2))  : parseFloat((nm * 0.50).toFixed(2));
-
-  return {
-    NM:  nm,
-    LP:  parseFloat(((nm  + mid) / 2).toFixed(2)),
-    MP:  mid,
-    HP:  parseFloat(((mid + low) / 2).toFixed(2)),
-    DMG: low,
-  };
+  return Object.fromEntries(
+    Object.entries(CONDITION_MULTIPLIERS).map(([cond, mult]) => [cond, parseFloat((nmPrice * mult).toFixed(2))])
+  );
 }
 
 // GET /api/pricesync/search — search cards by name for the image picker
@@ -133,7 +123,6 @@ router.get('/search', requireAuth, async (req, res) => {
             key,
             label:  VARIANT_LABELS[key] || key,
             market: val?.market ?? val?.mid ?? null,
-            mid:    val?.mid    ?? null,
             low:    val?.low    ?? null,
             high:   val?.high   ?? null,
           }))

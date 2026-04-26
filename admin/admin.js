@@ -270,8 +270,6 @@ function _selectVariant(btn, cardIdx) {
     if (_pickerSelect) _pickerSelect({
       ...card,
       market_price: variant.market,
-      market_mid:   variant.mid,
-      market_low:   variant.low,
       variant:      card.variant ? `${card.variant} — ${variant.label}` : variant.label,
     });
   } catch {}
@@ -284,23 +282,17 @@ function resetCardPicker() {
 }
 
 // ── Condition price helpers ───────────────────────────────
-// Fallback multipliers used only when real TCGPlayer mid/low data is unavailable
-const CONDITION_MULTIPLIERS = { NM: 1.0, LP: 0.75, MP: 0.50, HP: 0.30, DMG: 0.15 };
+// TCGPlayer condition multipliers applied to NM market price.
+// The Pokemon TCG API has no per-condition prices — these match TCGPlayer's own condition tiers.
+const CONDITION_MULTIPLIERS = { NM: 1.0, LP: 0.80, MP: 0.60, HP: 0.40, DMG: 0.25 };
 const CONDITION_BADGE_CLASS  = { NM: 'badge-ok', LP: 'badge-low', MP: 'badge-orange', HP: 'badge-out', DMG: 'badge-out' };
 
-// Compute per-condition prices using TCGPlayer market/mid/low data points.
-// Same formula as pricesync.js extractConditionPrices — falls back to multipliers if mid/low absent.
-function _computeCondPrices(nm, mid, low) {
-  const nmVal  = parseFloat(nm);
-  const midVal = (mid  != null) ? parseFloat(mid)  : parseFloat((nmVal * 0.50).toFixed(2));
-  const lowVal = (low  != null) ? parseFloat(low)  : parseFloat((nmVal * 0.15).toFixed(2));
-  return {
-    NM:  parseFloat(nmVal.toFixed(2)),
-    LP:  parseFloat(((nmVal + midVal) / 2).toFixed(2)),
-    MP:  parseFloat(midVal.toFixed(2)),
-    HP:  parseFloat(((midVal + lowVal) / 2).toFixed(2)),
-    DMG: parseFloat(lowVal.toFixed(2)),
-  };
+// Compute per-condition prices from a single NM market price using standard TCGPlayer condition tiers.
+function _computeCondPrices(nm) {
+  const nmVal = parseFloat(nm);
+  return Object.fromEntries(
+    Object.entries(CONDITION_MULTIPLIERS).map(([cond, mult]) => [cond, parseFloat((nmVal * mult).toFixed(2))])
+  );
 }
 
 // Render condition price pills into containerId.
