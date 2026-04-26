@@ -133,6 +133,7 @@ router.get('/search', requireAuth, async (req, res) => {
             key,
             label:  VARIANT_LABELS[key] || key,
             market: val?.market ?? val?.mid ?? null,
+            mid:    val?.mid    ?? null,
             low:    val?.low    ?? null,
             high:   val?.high   ?? null,
           }))

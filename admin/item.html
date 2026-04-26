@@ -230,6 +230,7 @@ let priceChart  = null;
 let gradedChart = null;
 let allHistory  = [];
 let _nmPrice    = null;
+let _condPrices = null;
 
 // ── Init ──────────────────────────────────────────────────
 (async () => {
@@ -250,7 +251,8 @@ let _nmPrice    = null;
   // Fetch condition prices in background
   API.get('/pricesync/condition-prices/' + itemId).then(function(r) {
     if (r && r.nm_price) {
-      _nmPrice = r.nm_price;
+      _nmPrice    = r.nm_price;
+      _condPrices = r.prices || null;
       showConditionPrices();
       document.getElementById('cond-prices-status').textContent = 'Live \xB7 TCGPlayer';
       document.getElementById('market-nm-price').textContent = fmt(r.nm_price);
@@ -375,7 +377,8 @@ async function syncPrice() {
     ]);
     itemData   = arr[0];
     allHistory = arr[1];
-    _nmPrice   = arr[0].price_nm || null;
+    _nmPrice    = arr[0].price_nm || null;
+    _condPrices = arr[0].price_nm ? { NM: arr[0].price_nm, LP: arr[0].price_lp, MP: arr[0].price_mp, HP: arr[0].price_hp, DMG: arr[0].price_dmg } : null;
     populateForm(arr[0]);
     renderLeftPanel();
     setRange('raw', 'all');
@@ -397,7 +400,8 @@ async function fetchConditionPrices() {
   btn.disabled = true; btn.textContent = '\u21bb Refreshing...'; status.textContent = '';
   try {
     var result = await API.get('/pricesync/condition-prices/' + itemId);
-    _nmPrice = result.nm_price;
+    _nmPrice    = result.nm_price;
+    _condPrices = result.prices || null;
     // Merge fresh condition prices into itemData so renderCopies picks them up
     if (itemData && result.prices) {
       itemData.price_nm  = result.prices.NM;
@@ -420,7 +424,7 @@ async function fetchConditionPrices() {
 
 function showConditionPrices() {
   if (!_nmPrice) return;
-  renderConditionPrices(_nmPrice, 'item-cond-prices', { conditionId: 'f-condition', priceId: 'f-price' });
+  renderConditionPrices(_condPrices || _nmPrice, 'item-cond-prices', { conditionId: 'f-condition', priceId: 'f-price' });
   var cond = itemData ? (itemData.condition || 'NM') : 'NM';
   var pill = document.getElementById('item-cond-prices').querySelector('.cond-price-pill[data-cond="' + cond + '"]');
   if (pill) pill.classList.add('active');

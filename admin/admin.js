@@ -270,6 +270,8 @@ function _selectVariant(btn, cardIdx) {
     if (_pickerSelect) _pickerSelect({
       ...card,
       market_price: variant.market,
+      market_mid:   variant.mid,
+      market_low:   variant.low,
       variant:      card.variant ? `${card.variant} — ${variant.label}` : variant.label,
     });
   } catch {}
@@ -282,26 +284,46 @@ function resetCardPicker() {
 }
 
 // ── Condition price helpers ───────────────────────────────
-// Standard TCGPlayer condition multipliers (NM = market price)
+// Fallback multipliers used only when real TCGPlayer mid/low data is unavailable
 const CONDITION_MULTIPLIERS = { NM: 1.0, LP: 0.75, MP: 0.50, HP: 0.30, DMG: 0.15 };
 const CONDITION_BADGE_CLASS  = { NM: 'badge-ok', LP: 'badge-low', MP: 'badge-orange', HP: 'badge-out', DMG: 'badge-out' };
 
+// Compute per-condition prices using TCGPlayer market/mid/low data points.
+// Same formula as pricesync.js extractConditionPrices — falls back to multipliers if mid/low absent.
+function _computeCondPrices(nm, mid, low) {
+  const nmVal  = parseFloat(nm);
+  const midVal = (mid  != null) ? parseFloat(mid)  : parseFloat((nmVal * 0.50).toFixed(2));
+  const lowVal = (low  != null) ? parseFloat(low)  : parseFloat((nmVal * 0.15).toFixed(2));
+  return {
+    NM:  parseFloat(nmVal.toFixed(2)),
+    LP:  parseFloat(((nmVal + midVal) / 2).toFixed(2)),
+    MP:  parseFloat(midVal.toFixed(2)),
+    HP:  parseFloat(((midVal + lowVal) / 2).toFixed(2)),
+    DMG: parseFloat(lowVal.toFixed(2)),
+  };
+}
+
 // Render condition price pills into containerId.
+// condPricesOrNm: a { NM, LP, MP, HP, DMG } object (real API data), or a plain NM price number (legacy fallback).
 // opts.conditionId — select to update on click
 // opts.priceId     — number input to update on click
-function renderConditionPrices(nmPrice, containerId, opts = {}) {
+function renderConditionPrices(condPricesOrNm, containerId, opts = {}) {
   const el = document.getElementById(containerId);
-  if (!el || !nmPrice) return;
+  if (!el || !condPricesOrNm) return;
+  const prices = (typeof condPricesOrNm === 'object')
+    ? condPricesOrNm
+    : _computeCondPrices(condPricesOrNm, null, null);
+  const nmPrice = prices.NM;
   el.innerHTML = `
     <div class="cond-prices-label">Market prices by condition <span style="color:var(--muted);font-size:0.7rem">(TCGPlayer NM ${fmt(nmPrice)})</span></div>
     <div class="cond-prices-row">
-      ${Object.entries(CONDITION_MULTIPLIERS).map(([cond, mult]) => {
-        const price = (nmPrice * mult).toFixed(2);
-        return `<button class="cond-price-pill" data-cond="${cond}" data-price="${price}"
+      ${Object.entries(prices).map(([cond, price]) => {
+        const p = parseFloat(price).toFixed(2);
+        return `<button class="cond-price-pill" data-cond="${cond}" data-price="${p}"
           onclick="selectConditionPrice(this,'${opts.conditionId || ''}','${opts.priceId || ''}')"
-          title="Set condition to ${cond} and price to $${price}">
+          title="Set condition to ${cond} and price to $${p}">
           <span class="cond-pill-label">${cond}</span>
-          <span class="cond-pill-price">$${price}</span>
+          <span class="cond-pill-price">$${p}</span>
         </button>`;
       }).join('')}
     </div>`;

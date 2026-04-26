@@ -12,9 +12,11 @@
 <div class="admin-layout">
   <div id="sidebar-mount"></div>
   <div class="main">
+
+    <!-- Topbar -->
     <div class="topbar">
       <div class="page-title" id="page-title">Inventory</div>
-      <input type="text" id="search" placeholder="Search cards or sets..." oninput="loadInventory()" class="topbar-search-input">
+      <div style="flex:1"></div>
       <button class="btn btn-ghost" id="sync-btn" onclick="syncPrices()">↻ Sync Prices</button>
       <button class="btn btn-ghost" onclick="document.getElementById('import-input').click()">⬆ Import CSV</button>
       <input type="file" id="import-input" accept=".csv" style="display:none" onchange="importCSV(this)">
@@ -87,18 +89,26 @@
 
       </div>
 
-      <!-- Card Grid -->
+      <!-- Main Content -->
       <div class="inv-grid-wrap">
-        <div class="inv-grid" id="inv-grid">
-          <div style="color:var(--muted);padding:48px;text-align:center">Loading...</div>
-        </div>
-      </div>
 
+        <!-- Search bar -->
+        <div class="inv-search-bar">
+          <input type="text" id="search" placeholder="Search cards, sets, variants..." oninput="loadInventory()" autocomplete="off">
+          <button class="btn btn-ghost" onclick="document.getElementById('search').value='';loadInventory()">Clear</button>
+        </div>
+
+        <!-- Card Grid -->
+        <div class="coll-grid" id="inv-grid">
+          <div style="color:var(--muted);padding:48px;text-align:center;grid-column:1/-1">Loading...</div>
+        </div>
+
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Add/Edit Modal -->
+<!-- Add Item Modal -->
 <div class="modal-overlay hidden" id="modal">
   <div class="modal">
     <div class="modal-header">
@@ -126,21 +136,32 @@
           <select id="f-category"><option value="singles">Singles</option><option value="sealed">Sealed</option><option value="graded">Graded</option></select>
         </div>
         <div class="form-group"><label>Condition</label>
-          <select id="f-condition"><option value="NM">NM</option><option value="LP">LP</option><option value="MP">MP</option><option value="HP">HP</option><option value="DMG">DMG</option></select>
+          <select id="f-condition" onchange="onModalConditionChange()"><option value="NM">NM</option><option value="LP">LP</option><option value="MP">MP</option><option value="HP">HP</option><option value="DMG">DMG</option></select>
         </div>
       </div>
+      <div id="modal-cond-prices" style="display:none" class="cond-prices-wrap"></div>
       <div class="form-group"><label>Variant</label><input type="text" id="f-variant" placeholder="Special Illustration Rare"></div>
       <div class="form-row">
         <div class="form-group"><label>Selling Price ($)</label><input type="number" id="f-price" placeholder="0.00" step="0.01" min="0" oninput="updateProfitDisplay()"></div>
         <div class="form-group"><label>Price Paid ($)</label><input type="number" id="f-price-paid" placeholder="0.00" step="0.01" min="0" oninput="updateProfitDisplay()"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label>Low Stock Threshold</label><input type="number" id="f-threshold" value="3" min="0"></div>
+        <div class="form-group"><label>Date Acquired</label><input type="date" id="f-date-acquired"></div>
         <div class="form-group"><label style="color:var(--muted)">Profit</label><div id="f-profit-display" style="padding:9px 12px;background:var(--navy3);border:1px solid var(--border);border-radius:7px;font-size:0.88rem">—</div></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Online Stock</label><input type="number" id="f-online" value="0" min="0"></div>
         <div class="form-group"><label>In-Store Stock</label><input type="number" id="f-instore" value="0" min="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Low Stock Threshold</label><input type="number" id="f-threshold" value="3" min="0"></div>
+        <div class="form-group"><label>Sale Channel</label>
+          <select id="f-channel">
+            <option value="both">Online &amp; In-Person</option>
+            <option value="online">Online Only</option>
+            <option value="instore">In-Person Only</option>
+          </select>
+        </div>
       </div>
       <div class="form-row">
         <div class="form-group"><label>Grading Company</label>
@@ -168,13 +189,7 @@
           </select>
         </div>
       </div>
-      <div class="form-group"><label>Sale Channel</label>
-        <select id="f-channel">
-          <option value="both">Online &amp; In-Person</option>
-          <option value="online">Online Only</option>
-          <option value="instore">In-Person Only</option>
-        </select>
-      </div>
+      <div class="form-group"><label>Notes</label><textarea id="f-notes" rows="2" placeholder="Any notes about this card..."></textarea></div>
       <div class="form-group"><label>Image URL</label><input type="url" id="f-img" placeholder="https://..." oninput="updateImgPreview(this.value)"></div>
     </div>
     <div class="modal-footer">
@@ -184,9 +199,56 @@
   </div>
 </div>
 
+<!-- Product Details Slide-out -->
+<div class="pd-overlay hidden" id="pd-overlay" onclick="closeProductDetails()"></div>
+<div class="pd-panel hidden" id="pd-panel">
+  <div class="pd-header">
+    <div>
+      <div class="pd-title">Product Details</div>
+      <div class="pd-card-name" id="pd-card-name"></div>
+    </div>
+    <button class="pd-close" onclick="closeProductDetails()">✕</button>
+  </div>
+  <div class="pd-body">
+    <input type="hidden" id="pd-id">
+
+    <div class="pd-section-label">Pricing</div>
+    <div class="form-group"><label>Selling Price ($)</label><input type="number" id="pd-price" step="0.01" min="0" placeholder="0.00" oninput="updatePdProfit()"></div>
+    <div class="form-group"><label>Price Paid ($)</label><input type="number" id="pd-price-paid" step="0.01" min="0" placeholder="0.00" oninput="updatePdProfit()"></div>
+    <div class="pd-profit-row" id="pd-profit-display"></div>
+
+    <div class="pd-section-label">Acquisition</div>
+    <div class="form-group"><label>Date Acquired</label><input type="date" id="pd-date-acquired"></div>
+    <div class="form-group"><label>Notes</label><textarea id="pd-notes" rows="3" placeholder="Any notes about this card..."></textarea></div>
+
+    <div class="pd-section-label">Stock</div>
+    <div class="form-row">
+      <div class="form-group"><label>Online Stock</label><input type="number" id="pd-online" min="0"></div>
+      <div class="form-group"><label>In-Store Stock</label><input type="number" id="pd-instore" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Low Stock Alert</label><input type="number" id="pd-threshold" min="0"></div>
+      <div class="form-group"><label>Sale Channel</label>
+        <select id="pd-channel">
+          <option value="both">Online &amp; In-Person</option>
+          <option value="online">Online Only</option>
+          <option value="instore">In-Person Only</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="pd-footer">
+    <button class="btn btn-danger btn-sm" onclick="pdDeleteItem()">Delete Item</button>
+    <button class="btn btn-primary" onclick="pdSaveItem()">Save Changes</button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 let currentUser;
+let _modalNmPrice   = null;
+let _modalCondPrices = null;
+let _pdCurrentItem = null;
 
 function getFilter(name) {
   const el = document.querySelector(`input[name="${name}"]:checked`);
@@ -217,92 +279,173 @@ async function loadInventory() {
   });
 
   const isAdmin = currentUser?.role === 'admin';
-  const iData = i => JSON.stringify(i).replace(/"/g, '&quot;');
 
-  document.getElementById('inv-grid').innerHTML = inv.length ? inv.map(i => `
-    <div class="inv-card" onclick="location.href='/admin/item.html?id=${i.id}'">
-      <div class="inv-card-img-wrap">
-        ${i.img_url
-          ? `<img src="${i.img_url}" alt="${i.name}" class="inv-card-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-          : ''}
-        <div class="inv-card-img-placeholder" style="${i.img_url ? 'display:none' : ''}">
-          <span>No Image</span>
+  document.getElementById('inv-grid').innerHTML = inv.length ? inv.map(i => {
+    const gradeParts   = i.grade ? i.grade.split(' ') : [];
+    const gradeCompany = gradeParts[0] || '';
+    const gradeNum     = gradeParts[1] || '';
+    const totalStock   = (i.online_stock || 0) + (i.instore_stock || 0);
+    return `
+      <div class="coll-card" onclick="location.href='/admin/item.html?id=${i.id}'">
+        <div class="coll-card-img-wrap">
+          ${i.img_url
+            ? `<img src="${i.img_url}" alt="${i.name}" class="coll-card-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+            : ''}
+          <div class="coll-card-no-img" style="${i.img_url ? 'display:none' : ''}">No Image</div>
+          ${i.grade
+            ? `<div class="coll-grade-chip"><span class="coll-grade-co">${gradeCompany}</span><span class="coll-grade-num">${gradeNum}</span></div>`
+            : `<div class="coll-cond-chip cond-${i.condition}">${i.condition}</div>`}
+          ${i.sale_channel === 'online'  ? `<div class="coll-channel-chip ch-online">Online</div>`    : ''}
+          ${i.sale_channel === 'instore' ? `<div class="coll-channel-chip ch-instore">In-Person</div>` : ''}
+          ${i.category === 'singles' ? `<button class="coll-card-sync" onclick="syncSinglePrice('${i.id}','${i.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="Sync market price">↻</button>` : ''}
         </div>
-        ${i.grade ? `<div class="inv-grade-badge">${i.grade}</div>` : ''}
-        ${i.sale_channel === 'online'  ? `<div class="inv-channel-badge ch-online">Online</div>`    : ''}
-        ${i.sale_channel === 'instore' ? `<div class="inv-channel-badge ch-instore">In-Person</div>` : ''}
-      </div>
-      <div class="inv-card-body">
-        <div class="inv-card-name">${i.name}</div>
-        <div class="inv-card-sub">${[i.set_name, i.variant].filter(Boolean).join(' · ')}</div>
-        <div class="inv-card-badges">
-          <span class="badge ${i.category === 'graded' ? 'badge-gold' : 'badge-blue'}">${i.category}</span>
-          <span class="badge ${{ NM:'badge-ok', LP:'badge-low', MP:'badge-orange', DMG:'badge-out' }[i.condition] || 'badge-gray'}">${i.condition}</span>
-        </div>
-        <div class="inv-card-price">${fmt(i.price)}</div>
-        ${i.price_paid ? `<div style="margin-top:1px">${profitBadge(i.price, i.price_paid)}</div>` : ''}
-        <div class="inv-card-stock" onclick="event.stopPropagation()">
-          <div class="inv-stock-row">
-            <span class="inv-stock-label">Online</span>
-            <input class="stock-input" type="number" value="${i.online_stock}" min="0" onchange="updateStock('${i.id}', this, 'online')" title="Online stock">
-          </div>
-          <div class="inv-stock-row">
-            <span class="inv-stock-label">In-Store</span>
-            <input class="stock-input" type="number" value="${i.instore_stock}" min="0" onchange="updateStock('${i.id}', this, 'instore')" title="In-store stock">
+        <div class="coll-card-info">
+          <div class="coll-card-name" title="${i.name}">${i.name}</div>
+          <div class="coll-card-set">${[i.set_name, i.variant].filter(Boolean).join(' · ') || '—'}</div>
+          <div class="coll-card-price">${fmt(i.price)}</div>
+          ${i.price_paid ? `<div class="coll-card-profit">${profitBadge(i.price, i.price_paid)}</div>` : ''}
+          <div class="coll-card-stock-row">
+            ${stockBadge(i.online_stock, i.instore_stock, i.low_stock_threshold)}
+            <span class="coll-card-stock-count">${totalStock} in stock</span>
           </div>
         </div>
-        <div class="inv-card-footer" onclick="event.stopPropagation()">
-          ${stockBadge(i.online_stock, i.instore_stock, i.low_stock_threshold)}
-          <div class="inv-card-actions">
-            ${i.category === 'singles' ? `<button class="btn btn-ghost btn-sm" onclick="syncSinglePrice('${i.id}','${i.name.replace(/'/g,"\\'")}');event.stopPropagation()" title="Sync market price">↻</button>` : ''}
-            <button class="btn btn-ghost btn-sm" onclick="duplicateItem(${iData(i)});event.stopPropagation()" title="Duplicate card">⧉</button>
-            ${isAdmin ? `<button class="btn btn-danger btn-sm" onclick="deleteItem('${i.id}','${i.name}');event.stopPropagation()">Del</button>` : ''}
-          </div>
-        </div>
-      </div>
-    </div>`).join('') :
-    '<div style="color:var(--muted);padding:48px;text-align:center;width:100%">No items found</div>';
+        <button class="coll-card-dots" onclick="openProductDetails('${i.id}', event)" title="Product Details">•••</button>
+      </div>`;
+  }).join('') : '<div class="inv-empty">No items found</div>';
 }
 
-async function updateStock(id, input, field) {
-  const item = await API.get(`/inventory/${id}`).catch(() => null);
-  if (!item) return;
-  const online  = field === 'online'  ? parseInt(input.value) : item.online_stock;
-  const instore = field === 'instore' ? parseInt(input.value) : item.instore_stock;
+// ── Product Details slide-out ─────────────────────────────
+async function openProductDetails(id, event) {
+  event.stopPropagation();
   try {
-    await API.patch(`/inventory/${id}/stock`, { online_stock: online, instore_stock: instore });
-    showToast('Stock updated');
+    const item = await API.get(`/inventory/${id}`);
+    _pdCurrentItem = item;
+    document.getElementById('pd-id').value            = item.id;
+    document.getElementById('pd-card-name').textContent = item.name;
+    document.getElementById('pd-price').value          = item.price || '';
+    document.getElementById('pd-price-paid').value     = item.price_paid || '';
+    document.getElementById('pd-date-acquired').value  = item.date_acquired ? item.date_acquired.slice(0,10) : '';
+    document.getElementById('pd-notes').value          = item.notes || '';
+    document.getElementById('pd-online').value         = item.online_stock ?? 0;
+    document.getElementById('pd-instore').value        = item.instore_stock ?? 0;
+    document.getElementById('pd-threshold').value      = item.low_stock_threshold ?? 3;
+    document.getElementById('pd-channel').value        = item.sale_channel || 'both';
+    updatePdProfit();
+    document.getElementById('pd-overlay').classList.remove('hidden');
+    document.getElementById('pd-panel').classList.remove('hidden');
   } catch (e) { showToast(e.message, 'error'); }
 }
 
+function closeProductDetails() {
+  document.getElementById('pd-overlay').classList.add('hidden');
+  document.getElementById('pd-panel').classList.add('hidden');
+  _pdCurrentItem = null;
+}
+
+function updatePdProfit() {
+  const price     = parseFloat(document.getElementById('pd-price').value) || 0;
+  const pricePaid = parseFloat(document.getElementById('pd-price-paid').value) || 0;
+  const el = document.getElementById('pd-profit-display');
+  el.innerHTML = pricePaid ? profitBadge(price, pricePaid) : '';
+}
+
+async function pdSaveItem() {
+  if (!_pdCurrentItem) return;
+  const item = _pdCurrentItem;
+  const body = {
+    name:                item.name,
+    set_name:            item.set_name,
+    variant:             item.variant,
+    category:            item.category,
+    condition:           item.condition,
+    img_url:             item.img_url,
+    grade:               item.grade,
+    price:               parseFloat(document.getElementById('pd-price').value) || 0,
+    price_paid:          parseFloat(document.getElementById('pd-price-paid').value) || null,
+    date_acquired:       document.getElementById('pd-date-acquired').value || null,
+    notes:               document.getElementById('pd-notes').value || null,
+    online_stock:        parseInt(document.getElementById('pd-online').value) || 0,
+    instore_stock:       parseInt(document.getElementById('pd-instore').value) || 0,
+    low_stock_threshold: parseInt(document.getElementById('pd-threshold').value) || 3,
+    sale_channel:        document.getElementById('pd-channel').value || 'both',
+  };
+  try {
+    await API.put(`/inventory/${item.id}`, body);
+    showToast('Changes saved');
+    closeProductDetails();
+    loadInventory();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+async function pdDeleteItem() {
+  if (!_pdCurrentItem) return;
+  const { name, id } = _pdCurrentItem;
+  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+  try {
+    await API.delete(`/inventory/${id}`);
+    showToast(`${name} deleted`);
+    closeProductDetails();
+    loadInventory();
+  } catch (e) { showToast(e.message, 'error'); }
+}
+
+// ── Add Item Modal ────────────────────────────────────────
 function openModal(item = null) {
-  document.getElementById('edit-id').value = item?.id || '';
+  document.getElementById('edit-id').value          = item?.id || '';
   document.getElementById('modal-title').textContent = item ? 'Edit Item' : 'Add Item';
-  document.getElementById('f-name').value      = item?.name || '';
-  document.getElementById('f-set').value       = item?.set_name || '';
-  document.getElementById('f-variant').value   = item?.variant || '';
-  document.getElementById('f-category').value  = item?.category || 'singles';
-  document.getElementById('f-condition').value = item?.condition || 'NM';
-  document.getElementById('f-price').value     = item?.price || '';
-  document.getElementById('f-online').value    = item?.online_stock ?? 0;
-  document.getElementById('f-instore').value   = item?.instore_stock ?? 0;
-  document.getElementById('f-threshold').value = item?.low_stock_threshold ?? 3;
+  document.getElementById('f-name').value           = item?.name || '';
+  document.getElementById('f-set').value            = item?.set_name || '';
+  document.getElementById('f-variant').value        = item?.variant || '';
+  document.getElementById('f-category').value       = item?.category || 'singles';
+  document.getElementById('f-condition').value      = item?.condition || 'NM';
+  document.getElementById('f-price').value          = item?.price || '';
+  document.getElementById('f-price-paid').value     = item?.price_paid || '';
+  document.getElementById('f-date-acquired').value  = item?.date_acquired ? item.date_acquired.slice(0,10) : '';
+  document.getElementById('f-online').value         = item?.online_stock ?? 0;
+  document.getElementById('f-instore').value        = item?.instore_stock ?? 0;
+  document.getElementById('f-threshold').value      = item?.low_stock_threshold ?? 3;
+  document.getElementById('f-channel').value        = item?.sale_channel || 'both';
+  document.getElementById('f-notes').value          = item?.notes || '';
   const gradeParts = item?.grade ? item.grade.split(' ') : [];
-  document.getElementById('f-grade-company').value = gradeParts[0] || '';
-  document.getElementById('f-grade-num').value     = gradeParts[1] || '';
-  document.getElementById('f-channel').value      = item?.sale_channel || 'both';
-  document.getElementById('f-price-paid').value  = item?.price_paid || '';
-  document.getElementById('f-img').value          = item?.img_url || '';
+  document.getElementById('f-grade-company').value  = gradeParts[0] || '';
+  document.getElementById('f-grade-num').value      = gradeParts[1] || '';
+  document.getElementById('f-img').value            = item?.img_url || '';
+  _modalNmPrice    = null;
+  _modalCondPrices = null;
+  document.getElementById('modal-cond-prices').style.display = 'none';
   updateProfitDisplay();
   updateImgPreview(item?.img_url || '');
   document.getElementById('modal').classList.remove('hidden');
   initCardPicker('f-name', 'f-set', card => {
-    if (card.set)          document.getElementById('f-set').value     = card.set;
-    if (card.variant)      document.getElementById('f-variant').value = card.variant;
-    if (card.market_price) document.getElementById('f-price').value   = card.market_price.toFixed(2);
+    if (card.set)     document.getElementById('f-set').value     = card.set;
+    if (card.variant) document.getElementById('f-variant').value = card.variant;
+    if (card.market_price) {
+      _modalNmPrice    = parseFloat(card.market_price);
+      _modalCondPrices = _computeCondPrices(card.market_price, card.market_mid, card.market_low);
+      const cond = document.getElementById('f-condition').value;
+      document.getElementById('f-price').value = (_modalCondPrices[cond] ?? _modalNmPrice).toFixed(2);
+      updateProfitDisplay();
+      const wrap = document.getElementById('modal-cond-prices');
+      wrap.style.display = 'block';
+      renderConditionPrices(_modalCondPrices, 'modal-cond-prices', { conditionId: 'f-condition', priceId: 'f-price' });
+      const activePill = wrap.querySelector(`.cond-price-pill[data-cond="${cond}"]`);
+      if (activePill) activePill.classList.add('active');
+    }
     document.getElementById('f-img').value = card.img_url;
     updateImgPreview(card.img_url);
   });
+}
+
+function onModalConditionChange() {
+  if (!_modalCondPrices && !_modalNmPrice) return;
+  const cond  = document.getElementById('f-condition').value;
+  const price = _modalCondPrices
+    ? (_modalCondPrices[cond] ?? _modalNmPrice)
+    : (_modalNmPrice * (CONDITION_MULTIPLIERS[cond] ?? 1.0));
+  document.getElementById('f-price').value = parseFloat(price).toFixed(2);
+  updateProfitDisplay();
+  const wrap = document.getElementById('modal-cond-prices');
+  wrap.querySelectorAll('.cond-price-pill').forEach(b => b.classList.toggle('active', b.dataset.cond === cond));
 }
 
 function updateProfitDisplay() {
@@ -314,6 +457,9 @@ function updateProfitDisplay() {
 }
 
 function closeModal() {
+  _modalNmPrice    = null;
+  _modalCondPrices = null;
+  document.getElementById('modal-cond-prices').style.display = 'none';
   document.getElementById('modal').classList.add('hidden');
   resetCardPicker();
 }
@@ -322,16 +468,11 @@ function updateImgPreview(url) {
   const wrap = document.getElementById('modal-img-wrap');
   const img  = document.getElementById('modal-img');
   if (url) {
-    img.src = url;
-    wrap.style.display = 'block';
+    img.src = url; wrap.style.display = 'block';
     img.onerror = () => { wrap.style.display = 'none'; };
     img.onload  = () => { wrap.style.display = 'block'; };
-  } else {
-    wrap.style.display = 'none';
-  }
+  } else { wrap.style.display = 'none'; }
 }
-
-function editItem(item) { openModal(item); }
 
 function duplicateItem(item) {
   openModal({ ...item, id: null, online_stock: 0, instore_stock: 0 });
@@ -341,17 +482,19 @@ function duplicateItem(item) {
 async function saveItem() {
   const id = document.getElementById('edit-id').value;
   const body = {
-    name: document.getElementById('f-name').value,
-    set_name: document.getElementById('f-set').value,
-    variant: document.getElementById('f-variant').value,
-    category: document.getElementById('f-category').value,
-    condition: document.getElementById('f-condition').value,
-    price: parseFloat(document.getElementById('f-price').value) || 0,
-    online_stock: parseInt(document.getElementById('f-online').value) || 0,
-    instore_stock: parseInt(document.getElementById('f-instore').value) || 0,
+    name:                document.getElementById('f-name').value,
+    set_name:            document.getElementById('f-set').value,
+    variant:             document.getElementById('f-variant').value,
+    category:            document.getElementById('f-category').value,
+    condition:           document.getElementById('f-condition').value,
+    price:               parseFloat(document.getElementById('f-price').value) || 0,
+    price_paid:          parseFloat(document.getElementById('f-price-paid').value) || null,
+    date_acquired:       document.getElementById('f-date-acquired').value || null,
+    notes:               document.getElementById('f-notes').value || null,
+    online_stock:        parseInt(document.getElementById('f-online').value) || 0,
+    instore_stock:       parseInt(document.getElementById('f-instore').value) || 0,
     low_stock_threshold: parseInt(document.getElementById('f-threshold').value) || 3,
-    sale_channel: document.getElementById('f-channel').value || 'both',
-    price_paid:   parseFloat(document.getElementById('f-price-paid').value) || null,
+    sale_channel:        document.getElementById('f-channel').value || 'both',
     grade: (() => {
       const co  = document.getElementById('f-grade-company').value;
       const num = document.getElementById('f-grade-num').value;
@@ -363,15 +506,6 @@ async function saveItem() {
     if (id) { await API.put(`/inventory/${id}`, body); showToast('Item updated'); }
     else     { await API.post('/inventory', body);      showToast('Item added');   }
     closeModal();
-    loadInventory();
-  } catch (e) { showToast(e.message, 'error'); }
-}
-
-async function deleteItem(id, name) {
-  if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
-  try {
-    await API.delete(`/inventory/${id}`);
-    showToast(`${name} deleted`);
     loadInventory();
   } catch (e) { showToast(e.message, 'error'); }
 }
@@ -397,11 +531,9 @@ async function syncPrices() {
 async function syncSinglePrice(id, name) {
   try {
     const result = await API.post(`/pricesync/single/${id}`, {});
-    showToast(`${name} updated: ${fmt(result.old_price)} → ${fmt(result.new_price)}`);
+    showToast(`${name}: ${fmt(result.old_price)} → ${fmt(result.new_price)}`);
     loadInventory();
-  } catch (e) {
-    showToast(`${name}: ${e.message}`, 'error');
-  }
+  } catch (e) { showToast(`${name}: ${e.message}`, 'error'); }
 }
 
 async function importCSV(input) {
@@ -434,11 +566,8 @@ async function importCSV(input) {
 (async () => {
   currentUser = await initPage('Inventory');
   loadInventory();
-  // Set autocomplete on sidebar filter
   initSetAutocomplete('filter-set');
-  // Set autocomplete on modal (called after modal opens, but wire the input here too)
   initSetAutocomplete('f-set');
-  // Handle duplicate redirect from item detail page
   if (new URLSearchParams(location.search).get('dup') === '1') {
     const dup = sessionStorage.getItem('dup');
     if (dup) {
